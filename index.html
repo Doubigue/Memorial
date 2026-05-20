@@ -1,0 +1,1698 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0d0d1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mémorial">
+<title>Mémorial — Gestion Funéraire</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════ VARIABLES ═══════════════════════ */
+:root{
+  --gold:#c9a84c;--gold-l:#e8d4a0;--gold-d:#8a6820;--gold-pale:rgba(201,168,76,.08);
+  --ink:#0d0d1a;--ink-mid:#1a1a2e;--ink-soft:#2d2d4a;--ink-pale:#4a4a6a;
+  --white:#fdfcfa;--green:#52b788;--red:#e07a7a;--blue:#93c5fd;--blue-d:#1e3a5f;
+  --r:12px;--r-sm:8px;--tr:all .28s cubic-bezier(.4,0,.2,1);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',sans-serif;background:var(--ink);color:var(--white);min-height:100vh;overflow-x:hidden}
+
+/* ── SPLASH ── */
+#splash{position:fixed;inset:0;z-index:1000;background:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;transition:opacity .7s ease,transform .7s ease}
+#splash.out{opacity:0;transform:translateY(-16px);pointer-events:none}
+.s-logo{width:80px;height:80px;border:1.5px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;animation:glowP 2s ease infinite}
+@keyframes glowP{0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,.35)}50%{box-shadow:0 0 0 18px rgba(201,168,76,0)}}
+.s-title{font-family:'Cormorant Garamond',serif;font-size:2.2rem;font-weight:300;letter-spacing:.12em;color:var(--gold-l)}
+.s-sub2{font-size:.75rem;letter-spacing:.28em;color:var(--ink-pale);text-transform:uppercase}
+.s-bar{width:120px;height:1px;background:var(--ink-soft);position:relative;overflow:hidden}
+.s-bar::after{content:'';position:absolute;inset-block:0;left:-100%;width:100%;background:var(--gold);animation:barS 1.9s ease forwards}
+@keyframes barS{to{left:100%}}
+
+/* ── APP ── */
+#app{display:none;flex-direction:column;min-height:100vh}
+#app.visible{display:flex}
+
+/* ── HEADER ── */
+.app-hdr{background:var(--ink-mid);border-bottom:1px solid rgba(201,168,76,.15);padding:.875rem 1.25rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;backdrop-filter:blur(16px)}
+.hdr-logo{display:flex;align-items:center;gap:.75rem}
+.hdr-emb{width:34px;height:34px;border:1px solid rgba(201,168,76,.4);border-radius:50%;display:flex;align-items:center;justify-content:center}
+.hdr-t{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:400;letter-spacing:.06em;color:var(--gold-l)}
+.hdr-r{display:flex;align-items:center;gap:.4rem}
+.ico-btn{width:36px;height:36px;border:1px solid rgba(255,255,255,.08);border-radius:var(--r-sm);background:transparent;color:var(--gold-l);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:var(--tr);position:relative}
+.ico-btn:hover{background:rgba(201,168,76,.1);border-color:rgba(201,168,76,.35)}
+.ico-btn svg{width:18px;height:18px}
+.drive-dot{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:#aaa;border:1.5px solid var(--ink-mid)}
+.drive-dot.on{background:#34a853}
+.drive-dot.off{background:#ea4335}
+
+/* ── NAV ── */
+.bnav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:var(--ink-mid);border-top:1px solid rgba(201,168,76,.1);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+.nb{flex:1;padding:.7rem .3rem .55rem;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--ink-pale);transition:var(--tr);position:relative;font-family:'DM Sans',sans-serif}
+.nb.active{color:var(--gold)}
+.nb.active::before{content:'';position:absolute;top:0;left:15%;right:15%;height:2px;background:var(--gold);border-radius:0 0 2px 2px;animation:nIn .3s ease}
+@keyframes nIn{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.nb svg{width:20px;height:20px}
+.nb span{font-size:.58rem;letter-spacing:.03em;font-weight:500}
+
+/* ── PAGES ── */
+.page{display:none;flex-direction:column;padding:1.25rem;padding-bottom:96px;gap:1rem;animation:fUp .32s ease}
+.page.active{display:flex}
+@keyframes fUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── TYPOGRAPHY ── */
+.s-ttl{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:300;color:var(--gold-l);letter-spacing:.03em}
+.s-sub{font-size:.72rem;color:var(--ink-pale);letter-spacing:.09em;text-transform:uppercase}
+.s-hdr{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:.15rem}
+
+/* ── CARDS ── */
+.card{background:var(--ink-mid);border:1px solid rgba(255,255,255,.06);border-radius:var(--r);padding:1.1rem 1.25rem;transition:var(--tr)}
+.card:hover{border-color:rgba(201,168,76,.18)}
+.card-g{background:linear-gradient(135deg,var(--ink-mid),rgba(201,168,76,.05));border-color:rgba(201,168,76,.22)}
+.card-b{background:linear-gradient(135deg,var(--ink-soft),rgba(30,58,95,.4));border-color:rgba(147,197,253,.15)}
+
+/* ── STAT GRID ── */
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+.sc{background:var(--ink-soft);border-radius:var(--r-sm);padding:1rem;border:1px solid rgba(255,255,255,.04);transition:var(--tr)}
+.sc:hover{transform:translateY(-1px);border-color:rgba(201,168,76,.15)}
+.sc-l{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-pale);margin-bottom:.35rem}
+.sc-v{font-size:1.3rem;font-weight:500;color:var(--white)}
+.sc-v.g{color:var(--green)}.sc-v.r{color:var(--red)}.sc-v.gold{color:var(--gold)}
+.sc-d{font-size:.68rem;color:var(--ink-pale);margin-top:2px}
+
+/* ── PROGRESS ── */
+.pbar{height:4px;background:var(--ink-soft);border-radius:2px;overflow:hidden}
+.pfill{height:100%;border-radius:2px;transition:width .65s cubic-bezier(.4,0,.2,1)}
+
+/* ── FORMS ── */
+.fg{display:flex;flex-direction:column;gap:.45rem}
+.fl{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-pale)}
+.fi,.fsel,.fta{background:var(--ink-soft);border:1px solid rgba(255,255,255,.08);border-radius:var(--r-sm);color:var(--white);padding:.65rem .9rem;font-family:'DM Sans',sans-serif;font-size:.88rem;transition:var(--tr);width:100%}
+.fi:focus,.fsel:focus,.fta:focus{outline:none;border-color:var(--gold);background:rgba(201,168,76,.05)}
+.fsel option{background:var(--ink-mid)}
+.fta{resize:vertical;min-height:72px}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+
+/* ── BUTTONS ── */
+.btn{padding:.7rem 1.1rem;border-radius:var(--r-sm);border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;transition:var(--tr);display:flex;align-items:center;justify-content:center;gap:.45rem}
+.btn-p{background:var(--gold);color:var(--ink)}.btn-p:hover{background:var(--gold-l);transform:translateY(-1px);box-shadow:0 4px 16px rgba(201,168,76,.3)}
+.btn-o{background:transparent;border:1px solid rgba(201,168,76,.35);color:var(--gold-l)}.btn-o:hover{background:var(--gold-pale)}
+.btn-d{background:transparent;border:1px solid rgba(155,34,38,.4);color:var(--red)}.btn-d:hover{background:rgba(155,34,38,.1)}
+.btn-b{background:transparent;border:1px solid rgba(147,197,253,.3);color:var(--blue)}.btn-b:hover{background:rgba(147,197,253,.07)}
+.btn-g{background:#34a853;color:#fff}.btn-g:hover{background:#2d9248;transform:translateY(-1px)}
+.btn-sm{padding:.42rem .75rem;font-size:.78rem}
+.btn-full{width:100%}
+.btn:active{transform:scale(.98)}
+
+/* ── BADGES ── */
+.bdg{display:inline-block;padding:.18rem .55rem;border-radius:20px;font-size:.68rem;font-weight:500;letter-spacing:.04em}
+.bdg-g{background:rgba(82,183,136,.15);color:var(--green);border:1px solid rgba(82,183,136,.25)}
+.bdg-r{background:rgba(224,122,122,.15);color:var(--red);border:1px solid rgba(224,122,122,.25)}
+.bdg-gold{background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.3)}
+.bdg-b{background:rgba(30,58,95,.5);color:var(--blue);border:1px solid rgba(147,197,253,.2)}
+.bdg-gray{background:rgba(255,255,255,.06);color:var(--ink-pale);border:1px solid rgba(255,255,255,.1)}
+
+/* ── LIST ITEMS ── */
+.li{display:flex;align-items:flex-start;gap:.8rem;padding:.85rem;background:var(--ink-mid);border:1px solid rgba(255,255,255,.05);border-radius:var(--r-sm);transition:var(--tr)}
+.li:hover{border-color:rgba(201,168,76,.15);background:rgba(201,168,76,.02)}
+.li-ico{width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.li-body{flex:1;min-width:0}
+.li-t{font-size:.88rem;font-weight:500;color:var(--white);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li-m{font-size:.72rem;color:var(--ink-pale);display:flex;gap:.45rem;flex-wrap:wrap;align-items:center}
+.li-acts{display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.act-row{display:flex;gap:3px;opacity:0;transition:var(--tr)}
+.li:hover .act-row{opacity:1}
+.act-btn{background:none;border:none;cursor:pointer;color:var(--ink-pale);padding:4px;transition:var(--tr);border-radius:4px;display:flex}
+.act-btn.ed:hover{color:var(--gold)}.act-btn.dl:hover{color:var(--red)}.act-btn.pr:hover{color:var(--blue)}
+
+/* ── CHIPS ── */
+.chips{display:flex;gap:.45rem;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;padding:.38rem .85rem;background:var(--ink-soft);border:1px solid rgba(255,255,255,.06);border-radius:20px;cursor:pointer;font-size:.75rem;font-weight:500;color:var(--ink-pale);transition:var(--tr);white-space:nowrap}
+.chip.active{background:rgba(201,168,76,.12);border-color:rgba(201,168,76,.35);color:var(--gold)}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:.45rem;background:var(--ink-soft);padding:4px;border-radius:var(--r-sm)}
+.tab{flex:1;padding:.42rem;border:none;border-radius:6px;background:transparent;color:var(--ink-pale);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.75rem;font-weight:500;transition:var(--tr)}
+.tab.active{background:var(--ink-mid);color:var(--gold);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+
+/* ── MODALS ── */
+.overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.72);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .28s ease}
+.overlay.open{opacity:1;pointer-events:all}
+.sheet{background:var(--ink-mid);border:1px solid rgba(201,168,76,.15);border-radius:var(--r) var(--r) 0 0;padding:1.5rem 1.25rem 2rem;width:100%;max-width:540px;transform:translateY(32px);transition:transform .35s cubic-bezier(.34,1.56,.64,1);max-height:92vh;overflow-y:auto}
+.overlay.open .sheet{transform:translateY(0)}
+.sh-hdl{width:36px;height:3px;background:var(--ink-pale);border-radius:2px;margin:0 auto 1.25rem}
+.sh-ttl{font-family:'Cormorant Garamond',serif;font-size:1.35rem;font-weight:400;color:var(--gold-l);margin-bottom:1.2rem;letter-spacing:.03em}
+.sh-body{display:flex;flex-direction:column;gap:.9rem}
+.btn-row{display:flex;gap:.65rem}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:92px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--ink-soft);color:var(--white);padding:.6rem 1.2rem;border-radius:30px;font-size:.82rem;z-index:400;border:1px solid rgba(201,168,76,.2);opacity:0;transition:all .32s ease;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:2.5rem 1rem;color:var(--ink-pale)}
+.empty svg{width:44px;height:44px;opacity:.3;margin-bottom:.85rem}
+.empty p{font-size:.85rem;line-height:1.7}
+
+/* ── ORNAMENT ── */
+.orn{display:flex;align-items:center;gap:.75rem;margin:.4rem 0}
+.orn::before,.orn::after{content:'';flex:1;height:1px;background:linear-gradient(to right,transparent,rgba(201,168,76,.3),transparent)}
+.orn span{font-size:.62rem;letter-spacing:.22em;color:rgba(201,168,76,.5);text-transform:uppercase}
+
+/* ── DOSSIER SELECTOR ── */
+.doss-pill{display:flex;align-items:center;gap:.5rem;background:var(--ink-soft);border:1px solid rgba(201,168,76,.2);border-radius:20px;padding:.35rem .9rem;cursor:pointer;transition:var(--tr);font-size:.8rem;color:var(--gold-l)}
+.doss-pill:hover{background:var(--gold-pale);border-color:rgba(201,168,76,.4)}
+
+/* ── DRIVE BANNER ── */
+.drive-banner{background:linear-gradient(135deg,rgba(52,168,83,.12),rgba(30,58,95,.2));border:1px solid rgba(52,168,83,.25);border-radius:var(--r-sm);padding:.75rem 1rem;display:flex;align-items:center;gap:.75rem}
+.drive-banner svg{width:20px;height:20px;flex-shrink:0}
+.drive-banner-text{flex:1;font-size:.8rem;line-height:1.5}
+.drive-banner-title{font-weight:500;color:var(--white);margin-bottom:1px}
+.drive-banner-sub{color:var(--ink-pale);font-size:.72rem}
+
+/* ── RESPONSIVE ── */
+@media(min-width:480px){
+  .app-hdr,.page{padding-left:1.75rem;padding-right:1.75rem}
+  .sheet{border-radius:var(--r);margin-bottom:1.5rem}
+}
+
+/* ═══════════════════════ PRINT STYLES ═══════════════════════ */
+@media print{
+  @page{size:A4;margin:12mm 10mm 12mm 10mm}
+  body,#app,#splash,.overlay,.toast,.bnav,.app-hdr,
+  #page-dashboard,#page-depenses,#page-cotisations,#page-groupes,#page-archives{display:none!important}
+  #print-zone{display:block!important;background:#fff;color:#1a1a2e;font-family:'DM Sans',sans-serif;font-size:10pt}
+
+  .pr-page{page-break-after:always;padding:0}
+  .pr-page:last-child{page-break-after:avoid}
+
+  /* ─ HEADER GLOBAL ─ */
+  .pr-hdr{border-bottom:2pt solid #8a6820;margin-bottom:11pt;padding-bottom:8pt;display:flex;justify-content:space-between;align-items:flex-start}
+  .pr-brand{font-family:'Cormorant Garamond',serif;font-size:20pt;font-weight:400;color:#8a6820;letter-spacing:.05em;line-height:1}
+  .pr-brand-sub{font-size:6.5pt;color:#999;letter-spacing:.18em;text-transform:uppercase;margin-top:2pt}
+  .pr-meta{text-align:right;font-size:7.5pt;color:#777;line-height:1.8}
+  .pr-meta strong{color:#1a1a2e;font-weight:500}
+
+  /* ─ REPORT TITLES ─ */
+  .pr-ttl{font-family:'Cormorant Garamond',serif;font-size:16pt;font-weight:400;color:#1a1a2e;margin-bottom:2pt}
+  .pr-sub{font-size:7.5pt;color:#aaa;letter-spacing:.12em;text-transform:uppercase;margin-bottom:11pt}
+  .pr-rule{height:1pt;background:rgba(201,168,76,.6);margin:8pt 0}
+
+  /* ─ STATS ─ */
+  .pr-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7pt;margin-bottom:11pt}
+  .pr-stat{border:.5pt solid #ddd;border-radius:5pt;padding:6pt 8pt;background:#fafaf8}
+  .pr-sl{font-size:6.5pt;color:#aaa;text-transform:uppercase;letter-spacing:.09em;margin-bottom:2pt}
+  .pr-sv{font-size:12pt;font-weight:500;color:#1a1a2e;font-family:'Cormorant Garamond',serif}
+  .pr-sv.g{color:#2d6a4f}.pr-sv.r{color:#9b2226}.pr-sv.gold{color:#8a6820}
+
+  /* ─ SECTION HEADERS ─ */
+  .pr-sec{font-family:'Cormorant Garamond',serif;font-size:12pt;font-weight:600;color:#1a1a2e;margin:12pt 0 4pt;padding-bottom:3pt;border-bottom:.5pt solid #c9a84c}
+  .pr-sec-sub{font-size:7pt;color:#aaa;margin-bottom:7pt;letter-spacing:.08em}
+
+  /* ─ TABLES ─ */
+  .pr-tbl{width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:10pt}
+  .pr-tbl th{background:#f2ede4;color:#5a4a1a;font-weight:500;font-size:7.5pt;text-transform:uppercase;letter-spacing:.06em;padding:5pt 6pt;text-align:left;border-bottom:1pt solid #c9a84c}
+  .pr-tbl th.r{text-align:right}
+  .pr-tbl td{padding:4.5pt 6pt;border-bottom:.3pt solid #eee;color:#1a1a2e;vertical-align:top}
+  .pr-tbl td.r{text-align:right;font-variant-numeric:tabular-nums}
+  .pr-tbl tr:nth-child(even) td{background:#fafaf8}
+  .pr-tbl .tot td{background:#f2ede4!important;font-weight:500;border-top:1pt solid #c9a84c;border-bottom:none}
+  .pr-tbl .ghdr td{background:#eae4d6!important;font-weight:500;color:#5a4a1a;border-top:1pt solid #c9a84c}
+
+  /* ─ BADGES PRINT ─ */
+  .pr-bdg{display:inline-block;padding:1pt 4pt;border-radius:8pt;font-size:7pt;border:.5pt solid #ccc}
+  .pr-bdg.g{color:#2d6a4f;border-color:#a8d5b7;background:#f0faf4}
+  .pr-bdg.gold{color:#8a6820;border-color:#c9a84c;background:#fdf6e3}
+  .pr-bdg.b{color:#1e3a5f;border-color:#93c5fd;background:#eff6ff}
+
+  /* ─ GROUP BLOCK ─ */
+  .pr-grp-blk{margin-bottom:13pt;border:.5pt solid #ddd;border-radius:5pt;overflow:hidden}
+  .pr-grp-hdr{background:#eae4d6;padding:6pt 8pt;display:flex;justify-content:space-between;align-items:center}
+  .pr-grp-nm{font-family:'Cormorant Garamond',serif;font-size:11pt;font-weight:600;color:#5a4a1a}
+  .pr-grp-tot{font-family:'Cormorant Garamond',serif;font-size:11pt;color:#2d6a4f}
+
+  /* ─ FOOTER ─ */
+  .pr-foot{margin-top:12pt;padding-top:6pt;border-top:.5pt solid #ddd;display:flex;justify-content:space-between;font-size:7pt;color:#ccc}
+  .pr-foot-sig{font-family:'Cormorant Garamond',serif;font-size:8pt;color:#c9a84c;font-style:italic}
+  .pr-signs{display:flex;gap:18pt;margin-top:16pt}
+  .pr-sign{flex:1;border-top:.5pt solid #999;padding-top:5pt;font-size:7.5pt;color:#777;text-align:center}
+
+  /* ════════════════════════════════════
+     FICHE INDIVIDUELLE COTISANT
+  ════════════════════════════════════ */
+  .fiche-page{page-break-after:always;padding:0;position:relative}
+  .fiche-page:last-child{page-break-after:avoid}
+
+  /* Cadre décoratif */
+  .fiche-frame{
+    border:1.5pt solid #c9a84c;border-radius:8pt;
+    padding:0;overflow:hidden;
+    box-shadow:inset 0 0 0 3pt #fdf6e3, inset 0 0 0 4pt #c9a84c;
+    background:#fff;
+  }
+  /* Coins décoratifs via pseudo -- CSS print safe */
+
+  /* Bandeau titre */
+  .fiche-title-band{
+    background:linear-gradient(135deg,#1a1a2e 0%,#2d2d4a 100%);
+    padding:10pt 16pt 8pt;
+    text-align:center;
+    border-bottom:1.5pt solid #c9a84c;
+  }
+  .fiche-title-main{font-family:'Cormorant Garamond',serif;font-size:15pt;font-weight:600;color:#e8d4a0;letter-spacing:.1em;text-transform:uppercase}
+  .fiche-title-sub{font-size:7.5pt;color:rgba(201,168,76,.7);letter-spacing:.2em;text-transform:uppercase;margin-top:2pt}
+
+  /* Corps fiche */
+  .fiche-body{padding:10pt 14pt}
+
+  /* Infos en-tête */
+  .fiche-infos{display:flex;gap:12pt;margin-bottom:10pt;align-items:flex-start}
+  .fiche-infos-left{flex:1.4}
+  .fiche-infos-center{flex:0.7;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4pt}
+  .fiche-infos-right{flex:1;border:.5pt solid #ddd;border-radius:5pt;padding:7pt;background:#fafaf8;min-height:60pt}
+
+  .fiche-section-lbl{font-size:7pt;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5a4a1a;border-bottom:1pt solid #c9a84c;padding-bottom:2pt;margin-bottom:5pt}
+
+  .fiche-info-row{display:flex;gap:4pt;margin-bottom:3pt;font-size:8.5pt}
+  .fiche-info-key{font-weight:600;color:#1a1a2e;min-width:52pt;flex-shrink:0;font-size:8pt;text-transform:uppercase}
+  .fiche-info-val{color:#1a1a2e;flex:1}
+
+  /* Icône entraide */
+  .fiche-icon-circle{width:40pt;height:40pt;border-radius:50%;background:#eae4d6;border:1.5pt solid #c9a84c;display:flex;align-items:center;justify-content:center}
+  .fiche-org-name{font-family:'Cormorant Garamond',serif;font-size:9pt;font-weight:600;color:#5a4a1a;text-align:center;line-height:1.3}
+  .fiche-org-sub{font-size:6.5pt;color:#999;letter-spacing:.1em;text-transform:uppercase;text-align:center}
+
+  .fiche-periode{font-size:8.5pt;color:#1a1a2e;margin-bottom:8pt}
+  .fiche-periode strong{font-weight:700;color:#5a4a1a}
+
+  /* Tableau cotisations */
+  .fiche-tbl{width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:8pt}
+  .fiche-tbl caption{font-family:'Cormorant Garamond',serif;font-size:12pt;font-weight:700;color:#1a1a2e;text-align:center;padding:6pt 0 5pt;letter-spacing:.06em;text-transform:uppercase;border-bottom:1pt solid #c9a84c;margin-bottom:0}
+  .fiche-tbl th{background:#1a1a2e;color:#e8d4a0;font-weight:500;font-size:7.5pt;text-transform:uppercase;letter-spacing:.07em;padding:5.5pt 7pt;text-align:center;border:1pt solid #2d2d4a}
+  .fiche-tbl td{padding:5pt 7pt;border:.4pt solid #ddd;color:#1a1a2e;text-align:center;vertical-align:middle}
+  .fiche-tbl td.l{text-align:left}
+  .fiche-tbl tr:nth-child(even) td{background:#f8f6f2}
+  .fiche-tbl .fiche-tot-row td{background:#f2ede4!important;font-weight:700;border-top:1.5pt solid #c9a84c;font-size:9.5pt}
+
+  /* Total box */
+  .fiche-total-box{border:1pt solid #c9a84c;border-radius:4pt;padding:5pt 12pt;background:#fdf6e3;display:inline-block;margin:4pt auto;font-family:'Cormorant Garamond',serif;font-size:13pt;font-weight:600;color:#5a4a1a}
+
+  /* Bas fiche */
+  .fiche-footer{border-top:1pt solid #ddd;padding:7pt 0 4pt;display:flex;justify-content:space-between;align-items:center}
+  .fiche-footer-motto{font-family:'Cormorant Garamond',serif;font-size:9pt;font-style:italic;color:#c9a84c;letter-spacing:.05em}
+  .fiche-footer-date{font-size:7pt;color:#aaa}
+
+  /* WATERMARK décoration coins */
+  .fiche-corner-tl,.fiche-corner-tr,.fiche-corner-bl,.fiche-corner-br{position:absolute;width:28pt;height:28pt;opacity:.4}
+  .fiche-corner-tl{top:2pt;left:2pt}
+  .fiche-corner-tr{top:2pt;right:2pt;transform:scaleX(-1)}
+  .fiche-corner-bl{bottom:2pt;left:2pt;transform:scaleY(-1)}
+  .fiche-corner-br{bottom:2pt;right:2pt;transform:scale(-1)}
+
+  /* ─ COMPARAISON ─ */
+  .pr-cmp-ttl{font-family:'Cormorant Garamond',serif;font-size:14pt;color:#1e3a5f;margin-bottom:2pt}
+  .arch-amt{color:#1e3a5f}
+  .pr-2col{display:grid;grid-template-columns:1fr 1fr;gap:8pt;margin-bottom:10pt}
+
+  /* ─ MULTI-DOSSIER ─ */
+  .pr-doss-hdr{background:linear-gradient(135deg,#1a1a2e,#2d2d4a);color:#e8d4a0;padding:8pt 10pt;border-radius:5pt 5pt 0 0;margin-bottom:0}
+  .pr-doss-nm{font-family:'Cormorant Garamond',serif;font-size:13pt;font-weight:400;letter-spacing:.05em}
+  .pr-doss-meta{font-size:7.5pt;color:rgba(201,168,76,.6);margin-top:1pt}
+}
+#print-zone{display:none}
+</style>
+</head>
+<body>
+
+<!-- ══════════ SPLASH ══════════ -->
+<div id="splash">
+  <div class="s-logo">
+    <svg width="38" height="38" viewBox="0 0 38 38" fill="none" stroke="#c9a84c" stroke-width="1.2">
+      <path d="M19 4C11 4 6 11 6 19C6 27 12 33 19 34C26 33 32 27 32 19C32 11 27 4 19 4Z"/>
+      <path d="M19 11L19 27M13 17C13 17 15.5 13 19 13C22.5 13 25 17 25 17"/>
+      <circle cx="19" cy="27" r="1.5" fill="#c9a84c" stroke="none"/>
+    </svg>
+  </div>
+  <div class="s-title">Mémorial</div>
+  <div class="s-sub2">Gestion des funérailles</div>
+  <div class="s-bar"></div>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="app">
+
+  <!-- HEADER -->
+  <header class="app-hdr">
+    <div class="hdr-logo">
+      <div class="hdr-emb">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#c9a84c" stroke-width="1.2">
+          <path d="M9 2C5.5 2 3 5.5 3 9C3 12.5 6 16 9 16C12 16 15 12.5 15 9C15 5.5 12.5 2 9 2Z"/>
+          <path d="M9 6L9 12M7 9C7 9 7.5 7 9 7C10.5 7 11 9 11 9"/>
+        </svg>
+      </div>
+      <span class="hdr-t">Mémorial</span>
+    </div>
+    <div class="hdr-r">
+      <button class="ico-btn" onclick="openPrintModal()" title="Imprimer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
+      </button>
+      <button class="ico-btn" id="drive-btn" onclick="openDriveModal()" title="Google Drive">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M12 2L2 19h20L12 2z"/><path d="M2 19h9v3H2z" style="display:none"/>
+          <path d="M8.5 14l-4 7h15l-4-7M12 2l7.5 13H4.5L12 2z"/>
+        </svg>
+        <span class="drive-dot" id="drive-dot"></span>
+      </button>
+      <button class="ico-btn" onclick="openModal('m-data')" title="Données">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ══ PAGE DASHBOARD ══ -->
+  <div class="page active" id="page-dashboard">
+    <div class="s-hdr">
+      <div>
+        <div class="s-ttl">Vue d'ensemble</div>
+        <div class="s-sub" id="doss-lbl">Aucun dossier actif</div>
+      </div>
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <div class="doss-pill" onclick="openModal('m-doss-sel')" id="doss-pill-btn">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="5" rx="1"/><path d="M3 10h18M3 17h18"/></svg>
+          Dossiers
+        </div>
+        <button class="btn btn-o btn-sm" onclick="openDossierModal()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Nouveau
+        </button>
+      </div>
+    </div>
+    <div class="sg">
+      <div class="sc"><div class="sc-l">Dépenses</div><div class="sc-v r" id="s-dep">0 F</div><div class="sc-d" id="s-ndep">0 entrée</div></div>
+      <div class="sc"><div class="sc-l">Cotisations</div><div class="sc-v g" id="s-cot">0 F</div><div class="sc-d" id="s-ncot">0 cotisant</div></div>
+      <div class="sc"><div class="sc-l">Solde net</div><div class="sc-v gold" id="s-solde">0 F</div><div class="sc-d">Cotis. − Dépenses</div></div>
+      <div class="sc"><div class="sc-l">Groupes</div><div class="sc-v" id="s-grp">0</div><div class="sc-d">Actifs</div></div>
+    </div>
+    <div class="card card-g">
+      <div style="display:flex;justify-content:space-between;margin-bottom:.65rem">
+        <span class="s-sub">Couverture des dépenses</span>
+        <span style="font-size:.8rem;color:var(--gold)" id="pct-lbl">0%</span>
+      </div>
+      <div class="pbar"><div class="pfill" id="pfill" style="width:0%;background:linear-gradient(90deg,#c9a84c,#52b788)"></div></div>
+    </div>
+    <div><div class="s-sub" style="margin-bottom:.6rem">Répartition par groupe</div><div id="grp-sum" style="display:flex;flex-direction:column;gap:.5rem"></div></div>
+  </div>
+
+  <!-- ══ PAGE DÉPENSES ══ -->
+  <div class="page" id="page-depenses">
+    <div class="s-hdr">
+      <div><div class="s-ttl">Dépenses</div><div class="s-sub" id="dep-lbl">—</div></div>
+      <button class="btn btn-p btn-sm" onclick="openAddDep()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Ajouter</button>
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="fDep('all',this)">Toutes</button>
+      <button class="tab" onclick="fDep('ceremoniel',this)">Cérémonie</button>
+      <button class="tab" onclick="fDep('logistique',this)">Logistique</button>
+      <button class="tab" onclick="fDep('autre',this)">Autre</button>
+    </div>
+    <div id="dep-list" style="display:flex;flex-direction:column;gap:.45rem"></div>
+  </div>
+
+  <!-- ══ PAGE COTISATIONS ══ -->
+  <div class="page" id="page-cotisations">
+    <div class="s-hdr">
+      <div><div class="s-ttl">Cotisations</div><div class="s-sub" id="cot-lbl">—</div></div>
+      <button class="btn btn-p btn-sm" onclick="openAddCot()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Ajouter</button>
+    </div>
+    <div class="chips" id="grp-chips"></div>
+    <div id="cot-list" style="display:flex;flex-direction:column;gap:.45rem"></div>
+  </div>
+
+  <!-- ══ PAGE GROUPES ══ -->
+  <div class="page" id="page-groupes">
+    <div class="s-hdr">
+      <div><div class="s-ttl">Groupes</div><div class="s-sub">Quartier · Ville · Village · Famille</div></div>
+      <button class="btn btn-p btn-sm" onclick="openAddGrp()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Créer</button>
+    </div>
+    <div id="grp-list" style="display:flex;flex-direction:column;gap:.5rem"></div>
+  </div>
+
+  <!-- ══ PAGE ARCHIVES ══ -->
+  <div class="page" id="page-archives">
+    <div class="s-hdr">
+      <div><div class="s-ttl">Archives</div><div class="s-sub">Comparer avec d'anciennes funérailles</div></div>
+      <button class="btn btn-b btn-sm" onclick="document.getElementById('arch-inp').click()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Importer archive
+      </button>
+    </div>
+    <input type="file" id="arch-inp" accept=".ndjson,.jsonl" style="display:none" onchange="importArchive(this)">
+    <div id="arch-list" style="display:flex;flex-direction:column;gap:.65rem"></div>
+  </div>
+
+  <!-- NAV -->
+  <nav class="bnav">
+    <button class="nb active" onclick="showPage('dashboard',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      <span>Tableau</span>
+    </button>
+    <button class="nb" onclick="showPage('depenses',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 10h4.5a1.5 1.5 0 0 1 0 3H9.5a1.5 1.5 0 0 0 0 3H15"/></svg>
+      <span>Dépenses</span>
+    </button>
+    <button class="nb" onclick="showPage('cotisations',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20 7H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 3H8L6 7h12l-2-4z"/><circle cx="12" cy="13" r="2"/></svg>
+      <span>Cotisations</span>
+    </button>
+    <button class="nb" onclick="showPage('groupes',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="9" cy="7" r="3"/><circle cx="15" cy="7" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6h6c3.3 0 6 2.7 6 6"/></svg>
+      <span>Groupes</span>
+    </button>
+    <button class="nb" onclick="showPage('archives',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M21 8v13H3V8"/><path d="M23 3H1v5h22V3z"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+      <span>Archives</span>
+    </button>
+  </nav>
+</div>
+
+<!-- ══════════ MODALS ══════════ -->
+
+<!-- DOSSIER SELECT -->
+<div class="overlay" id="m-doss-sel" onclick="cOv(this)">
+  <div class="sheet" onclick.stop="">
+    <div class="sh-hdl"></div>
+    <div class="sh-ttl">Choisir un dossier</div>
+    <div class="sh-body">
+      <div id="doss-sel-list" style="display:flex;flex-direction:column;gap:.5rem;max-height:50vh;overflow-y:auto"></div>
+      <button class="btn btn-p btn-full" onclick="cOv(document.getElementById('m-doss-sel'));openDossierModal()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Nouveau dossier
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- DOSSIER EDIT -->
+<div class="overlay" id="m-dossier" onclick="cOv(this)">
+  <div class="sheet" onclick.stop="">
+    <div class="sh-hdl"></div><div class="sh-ttl">Dossier funéraire</div>
+    <div class="sh-body">
+      <div class="fg"><label class="fl">Nom du défunt(e)</label><input class="fi" id="d-defunt" placeholder="Prénom Nom" type="text"></div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Date décès</label><input class="fi" id="d-deces" type="date"></div>
+        <div class="fg"><label class="fl">Date funérailles</label><input class="fi" id="d-fun" type="date"></div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Lieu</label><input class="fi" id="d-lieu" placeholder="Ville / Village" type="text"></div>
+        <div class="fg"><label class="fl">Responsable</label><input class="fi" id="d-resp" placeholder="Nom" type="text"></div>
+      </div>
+      <div class="fg"><label class="fl">Groupe / Organisation</label><input class="fi" id="d-org" placeholder="Ex: Côte d'Ivoire Mutuelle" type="text"></div>
+      <div class="fg"><label class="fl">Notes</label><textarea class="fta" id="d-notes" placeholder="Informations…"></textarea></div>
+      <div class="btn-row">
+        <button class="btn btn-o btn-full" onclick="cOv(document.getElementById('m-dossier'))">Annuler</button>
+        <button class="btn btn-p btn-full" onclick="saveDossier()">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DÉPENSE -->
+<div class="overlay" id="m-dep" onclick="cOv(this)">
+  <div class="sheet" onclick.stop="">
+    <div class="sh-hdl"></div><div class="sh-ttl" id="m-dep-ttl">Nouvelle dépense</div>
+    <div class="sh-body">
+      <div class="fg"><label class="fl">Libellé</label><input class="fi" id="dep-lib" placeholder="Cercueil, Repas, Transport…" type="text"></div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Montant (FCFA)</label><input class="fi" id="dep-mnt" placeholder="0" type="number" min="0"></div>
+        <div class="fg"><label class="fl">Catégorie</label>
+          <select class="fsel" id="dep-cat">
+            <option value="ceremoniel">Cérémonie</option><option value="logistique">Logistique</option>
+            <option value="alimentation">Alimentation</option><option value="transport">Transport</option><option value="autre">Autre</option>
+          </select>
+        </div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Date</label><input class="fi" id="dep-date" type="date"></div>
+        <div class="fg"><label class="fl">Fournisseur</label><input class="fi" id="dep-four" placeholder="Optionnel" type="text"></div>
+      </div>
+      <div class="fg"><label class="fl">Note</label><input class="fi" id="dep-note" placeholder="Optionnel" type="text"></div>
+      <div class="btn-row">
+        <button class="btn btn-o btn-full" onclick="cOv(document.getElementById('m-dep'))">Annuler</button>
+        <button class="btn btn-p btn-full" onclick="saveDep()">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- COTISATION -->
+<div class="overlay" id="m-cot" onclick="cOv(this)">
+  <div class="sheet" onclick.stop="">
+    <div class="sh-hdl"></div><div class="sh-ttl" id="m-cot-ttl">Nouvelle cotisation</div>
+    <div class="sh-body">
+      <div class="fr2">
+        <div class="fg"><label class="fl">Nom</label><input class="fi" id="cot-nom" placeholder="Prénom Nom" type="text"></div>
+        <div class="fg"><label class="fl">Prénom</label><input class="fi" id="cot-prenom" placeholder="Prénom" type="text"></div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Montant (FCFA)</label><input class="fi" id="cot-mnt" placeholder="0" type="number" min="0"></div>
+        <div class="fg"><label class="fl">Type</label>
+          <select class="fsel" id="cot-type">
+            <option value="Cotisation Funérailles">Cotisation Funérailles</option>
+            <option value="Cotisation Caisse Décès">Cotisation Caisse Décès</option>
+            <option value="Donation (Matériel)">Donation Matériel</option>
+            <option value="Aide familiale">Aide familiale</option>
+            <option value="Autre">Autre</option>
+          </select>
+        </div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Groupe</label><select class="fsel" id="cot-grp"><option value="">— Sans groupe —</option></select></div>
+        <div class="fg"><label class="fl">Mode paiement</label>
+          <select class="fsel" id="cot-mode">
+            <option value="Espèces">Espèces</option><option value="Virement Bancaire">Virement Bancaire</option>
+            <option value="Mobile Money">Mobile Money</option><option value="Chèque">Chèque</option>
+          </select>
+        </div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Date</label><input class="fi" id="cot-date" type="date"></div>
+        <div class="fg"><label class="fl">Détail / Matériel</label><input class="fi" id="cot-detail" placeholder="Ex: Sacs de riz 25kg" type="text"></div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Domicile</label><input class="fi" id="cot-domicile" placeholder="Adresse" type="text"></div>
+        <div class="fg"><label class="fl">Responsable désigné</label><input class="fi" id="cot-respdesi" placeholder="Nom + Contact" type="text"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-o btn-full" onclick="cOv(document.getElementById('m-cot'))">Annuler</button>
+        <button class="btn btn-p btn-full" onclick="saveCot()">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GROUPE -->
+<div class="overlay" id="m-grp" onclick="cOv(this)">
+  <div class="sheet" onclick.stop="">
+    <div class="sh-hdl"></div><div class="sh-ttl">Nouveau groupe</div>
+    <div class="sh-body">
+      <div class="fr2">
+        <div class="fg"><label class="fl">Nom du groupe</label><input class="fi" id="grp-nom" placeholder="Ex: Quartier Adjamé…" type="text"></div>
+        <div class="fg"><label class="fl">Type</label>
+          <select class="fsel" id="grp-type">
+            <option value="quartier">Quartier</option><option value="ville">Ville</option>
+            <option value="village">Village</option><option value="famille">Famille</option>
+            <option value="association">Association</option><option value="autre">Autre</option>
+          </select>
+        </div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Responsable</label><input class="fi" id="grp-resp" placeholder="Optionnel" type="text"></div>
+        <div class="fg"><label class="fl">Objectif FCFA</label><input class="fi" id="grp-obj" placeholder="0" type="number" min="0"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-o btn-full" onclick="cOv(document.getElementById('m-grp'))">Annuler</button>
+        <button class="btn btn-p btn-full" onclick="saveGrp()">Créer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PRINT OPTIONS -->
+<div class="overlay" id="m-print" onclick="cOv(this)">
+  <div class="sheet" onclick.stop="">
+    <div class="sh-hdl"></div><div class="sh-ttl">Options d'impression</div>
+    <div class="sh-body">
+      <div class="orn"><span>fiches individuelles</span></div>
+      <button class="btn btn-p btn-full" onclick="doPrint('fiche_all')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="5" rx="1"/><path d="M3 10h18"/><path d="M3 15h8"/></svg>
+        Fiche de chaque cotisant
+      </button>
+      <div class="orn"><span>rapports globaux</span></div>
+      <button class="btn btn-o btn-full" onclick="doPrint('global')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
+        Liste globale des cotisations
+      </button>
+      <button class="btn btn-o btn-full" onclick="doPrint('par_groupe')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="3"/><circle cx="15" cy="7" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6h6c3.3 0 6 2.7 6 6"/></svg>
+        Cotisations par groupe
+      </button>
+      <button class="btn btn-o btn-full" onclick="doPrint('par_responsable')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        Rapport par responsable
+      </button>
+      <button class="btn btn-o btn-full" onclick="doPrint('depenses')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 10h4.5a1.5 1.5 0 0 1 0 3H9.5a1.5 1.5 0 0 0 0 3H15"/></svg>
+        Relevé des dépenses
+      </button>
+      <button class="btn btn-o btn-full" onclick="doPrint('complet')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Rapport complet
+      </button>
+      <div class="orn"><span>multi-dossiers</span></div>
+      <button class="btn btn-b btn-full" onclick="doPrint('tous_dossiers')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="5" rx="1"/><path d="M3 10h18M3 17h18"/></svg>
+        Tous les dossiers (vue globale)
+      </button>
+      <div id="arch-print-area"></div>
+    </div>
+  </div>
+</div>
+
+<!-- DONNÉES NDJSON -->
+<div class="overlay" id="m-data" onclick="cOv(this)">
+  <div class="sheet" onclick.stop="">
+    <div class="sh-hdl"></div><div class="sh-ttl">Fichier de données</div>
+    <div class="sh-body">
+      <div class="card" style="background:var(--gold-pale);border-color:rgba(201,168,76,.2)">
+        <p style="font-size:.8rem;color:var(--gold-l);line-height:1.7">Fichier NDJSON unique contenant <strong>tous les dossiers</strong> (plusieurs funérailles), groupes, dépenses et cotisations.</p>
+      </div>
+      <button class="btn btn-p btn-full" onclick="exportNDJSON()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Télécharger memorial_complet.ndjson
+      </button>
+      <div class="orn"><span>importer</span></div>
+      <button class="btn btn-o btn-full" onclick="document.getElementById('main-inp').click()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Charger fichier .ndjson
+      </button>
+      <button class="btn btn-d btn-full" onclick="confirmReset()">Réinitialiser toutes les données</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="main-inp" accept=".ndjson,.jsonl" style="display:none" onchange="importMain(this)">
+
+<!-- GOOGLE DRIVE MODAL -->
+<div class="overlay" id="m-drive" onclick="cOv(this)">
+  <div class="sheet" onclick.stop="">
+    <div class="sh-hdl"></div><div class="sh-ttl">Google Drive partagé</div>
+    <div class="sh-body">
+      <div class="card card-b">
+        <p style="font-size:.8rem;color:var(--blue);line-height:1.7;">Toutes les personnes connectées partagent le <strong>même fichier</strong> sur le Drive que vous configurez ci-dessous. Peu importe le compte Google utilisé, les données se synchronisent vers ce Drive unique.</p>
+      </div>
+
+      <div id="drive-status-area"></div>
+
+      <div class="fg">
+        <label class="fl">Clé API Google (lecture seule pour lier le Drive)</label>
+        <input class="fi" id="drive-api-key" placeholder="Votre Google API Key" type="text" value="AIzaSyDfmG4iN7b52f5NCTPl8bSNt1yGBJeUL2U">
+      </div>
+      <div class="fg">
+        <label class="fl">Client ID OAuth 2.0</label>
+        <input class="fi" id="drive-client-id" placeholder="xxxx.apps.googleusercontent.com" type="text" value="695303092999-qcp9grf8oe85g4jee0lpicrc9aaekb4k.apps.googleusercontent.com">
+      </div>
+      <div class="fg">
+        <label class="fl">ID du fichier Drive cible (optionnel — laissez vide pour créer)</label>
+        <input class="fi" id="drive-file-id" placeholder="ID du fichier partagé sur Drive" type="text">
+      </div>
+
+      <button class="btn btn-g btn-full" onclick="driveConnect()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2L2 19h20L12 2z"/><path d="M8.5 14l-4 7h15l-4-7M12 2l7.5 13H4.5L12 2z"/></svg>
+        Se connecter avec Google
+      </button>
+      <div id="drive-user-info" style="display:none" class="drive-banner">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34a853" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <div class="drive-banner-text">
+          <div class="drive-banner-title" id="drive-user-name">Connecté</div>
+          <div class="drive-banner-sub" id="drive-user-email">—</div>
+        </div>
+        <button class="btn btn-d btn-sm" onclick="driveDisconnect()">Déconnecter</button>
+      </div>
+      <div style="display:flex;gap:.65rem">
+        <button class="btn btn-o btn-full" id="drive-sync-btn" onclick="driveSyncNow()" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Synchroniser maintenant
+        </button>
+        <button class="btn btn-b btn-full" id="drive-load-btn" onclick="driveLoadData()" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Charger depuis Drive
+        </button>
+      </div>
+
+      <div class="card" style="background:rgba(0,0,0,.2);border-color:rgba(255,255,255,.06)">
+        <p style="font-size:.75rem;color:var(--ink-pale);line-height:1.7">
+          <strong style="color:var(--white)">Configuration :</strong><br>
+          ✅ Client ID OAuth intégré (projet <em>memorial-496915</em>)<br>
+          ✅ Compte : loubikoadoubigue93@gmail.com<br>
+          ✅ Origine autorisée : https://doubigue.github.io<br><br>
+          Il suffit de cliquer <strong style="color:var(--white)">Se connecter avec Google</strong> ci-dessus.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="print-zone"></div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   STATE — MULTI-DOSSIERS
+   Structure: { dossiers:[], depenses:[], cotisations:[], groupes:[], archives:[] }
+   Chaque dossier a un id. depenses/cotisations/groupes ont un dossierId.
+═══════════════════════════════════════════════ */
+let DB = { dossiers:[], depenses:[], cotisations:[], groupes:[], archives:[] };
+let CUR_DOSS_ID = null; // dossier actif
+let cotEId=null, depEId=null, activeGF='all', activeDF='all';
+
+// Google Drive state
+let driveToken = null;
+let driveFileId = null;
+let driveUserInfo = null;
+
+// ── PERSIST ──
+function saveDB(){
+  try{
+    localStorage.setItem('mem_db_v4', JSON.stringify(DB));
+    localStorage.setItem('mem_doss_v4', CUR_DOSS_ID||'');
+    localStorage.setItem('mem_drive_v4', JSON.stringify({
+      apiKey: document.getElementById('drive-api-key')?.value||'',
+      clientId: document.getElementById('drive-client-id')?.value||'',
+      fileId: driveFileId||document.getElementById('drive-file-id')?.value||''
+    }));
+  }catch(e){}
+}
+function loadDB(){
+  try{const r=localStorage.getItem('mem_db_v4');if(r)DB=JSON.parse(r);}catch(e){}
+  try{CUR_DOSS_ID=localStorage.getItem('mem_doss_v4')||null;}catch(e){}
+  // Validate
+  if(!DB.dossiers) DB.dossiers=[];
+  if(!DB.depenses) DB.depenses=[];
+  if(!DB.cotisations) DB.cotisations=[];
+  if(!DB.groupes) DB.groupes=[];
+  if(!DB.archives) DB.archives=[];
+  if(CUR_DOSS_ID && !DB.dossiers.find(d=>d.id===CUR_DOSS_ID)) CUR_DOSS_ID=DB.dossiers[0]?.id||null;
+  // Drive config
+  try{
+    const dc=JSON.parse(localStorage.getItem('mem_drive_v4')||'{}');
+    setTimeout(()=>{
+      if(dc.apiKey) document.getElementById('drive-api-key').value=dc.apiKey;
+      else document.getElementById('drive-api-key').value=OAUTH_CONFIG.api_key;
+      // Toujours utiliser le Client ID de la config OAuth intégrée
+      document.getElementById('drive-client-id').value=OAUTH_CONFIG.client_id;
+      if(dc.fileId){ driveFileId=dc.fileId; document.getElementById('drive-file-id').value=dc.fileId; }
+    },100);
+  }catch(e){}
+}
+
+// ── CURRENT DOSSIER HELPERS ──
+const curD = ()=>DB.dossiers.find(d=>d.id===CUR_DOSS_ID)||null;
+const curCots = ()=>DB.cotisations.filter(c=>c.dossierId===CUR_DOSS_ID);
+const curDeps = ()=>DB.depenses.filter(d=>d.dossierId===CUR_DOSS_ID);
+const curGrps = ()=>DB.groupes.filter(g=>g.dossierId===CUR_DOSS_ID);
+
+// ── UTILS ──
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const fmt=n=>new Intl.NumberFormat('fr-FR').format(Math.round(n))+' F';
+const today=()=>new Date().toISOString().split('T')[0];
+const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const fd=d=>{if(!d)return'—';const p=d.split('-');return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:d};
+function toast(m,d=2700){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),d)}
+const pNow=()=>{const n=new Date();return`${n.getDate().toString().padStart(2,'0')}/${(n.getMonth()+1).toString().padStart(2,'0')}/${n.getFullYear()} ${n.getHours().toString().padStart(2,'0')}:${n.getMinutes().toString().padStart(2,'0')}`};
+
+// ── MODALS ──
+const openModal=id=>document.getElementById(id).classList.add('open');
+function cOv(el){if(el.classList&&el.classList.contains('overlay'))el.classList.remove('open')}
+document.querySelectorAll('.sheet').forEach(s=>s.addEventListener('click',e=>e.stopPropagation()));
+
+// ── NAV ──
+function showPage(n,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+n).classList.add('active');
+  if(btn)btn.classList.add('active');
+  ({cotisations:rCots,depenses:rDeps,groupes:rGrps,dashboard:rDash,archives:rArch}[n]||rDash)();
+}
+
+// ── DOSSIER MANAGEMENT ──
+function openDossierModal(){
+  const d=curD()||{};
+  document.getElementById('d-defunt').value=d.defunt||'';
+  document.getElementById('d-deces').value=d.deces||'';
+  document.getElementById('d-fun').value=d.funerailles||today();
+  document.getElementById('d-lieu').value=d.lieu||'';
+  document.getElementById('d-resp').value=d.responsable||'';
+  document.getElementById('d-org').value=d.organisation||'';
+  document.getElementById('d-notes').value=d.notes||'';
+  openModal('m-dossier');
+}
+function saveDossier(){
+  const defunt=document.getElementById('d-defunt').value.trim();
+  if(!defunt){toast('⚠ Nom du défunt(e) requis');return}
+  const isNew=!CUR_DOSS_ID||!DB.dossiers.find(d=>d.id===CUR_DOSS_ID);
+  const id=isNew?uid():CUR_DOSS_ID;
+  const obj={_type:'dossier',id,defunt,
+    deces:document.getElementById('d-deces').value,
+    funerailles:document.getElementById('d-fun').value,
+    lieu:document.getElementById('d-lieu').value.trim(),
+    responsable:document.getElementById('d-resp').value.trim(),
+    organisation:document.getElementById('d-org').value.trim(),
+    notes:document.getElementById('d-notes').value.trim(),
+    updatedAt:new Date().toISOString()
+  };
+  if(isNew){obj.createdAt=new Date().toISOString();DB.dossiers.push(obj);CUR_DOSS_ID=id;}
+  else{const i=DB.dossiers.findIndex(d=>d.id===CUR_DOSS_ID);if(i>=0)DB.dossiers[i]={...DB.dossiers[i],...obj};}
+  saveDB();cOv(document.getElementById('m-dossier'));rDash();rDossSel();
+  toast(isNew?'✓ Nouveau dossier créé':'✓ Dossier mis à jour');
+}
+function selectDossier(id){
+  CUR_DOSS_ID=id; activeGF='all'; activeDF='all';
+  saveDB(); cOv(document.getElementById('m-doss-sel'));
+  rAll(); toast('✓ Dossier sélectionné');
+}
+function deleteDossier(id){
+  if(!confirm('Supprimer ce dossier et toutes ses données ?'))return;
+  DB.dossiers=DB.dossiers.filter(d=>d.id!==id);
+  DB.cotisations=DB.cotisations.filter(c=>c.dossierId!==id);
+  DB.depenses=DB.depenses.filter(d=>d.dossierId!==id);
+  DB.groupes=DB.groupes.filter(g=>g.dossierId!==id);
+  if(CUR_DOSS_ID===id) CUR_DOSS_ID=DB.dossiers[0]?.id||null;
+  saveDB(); rDossSel(); rAll(); toast('Dossier supprimé');
+}
+function rDossSel(){
+  const el=document.getElementById('doss-sel-list');
+  if(!DB.dossiers.length){el.innerHTML=`<div class="empty" style="padding:1.5rem 0"><p>Aucun dossier.<br>Créez le premier dossier.</p></div>`;return}
+  el.innerHTML=DB.dossiers.map(d=>`
+    <div class="li" style="cursor:pointer" onclick="selectDossier('${d.id}')">
+      <div class="li-ico" style="background:rgba(201,168,76,.12)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="1.5" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+      </div>
+      <div class="li-body">
+        <div class="li-t">${esc(d.defunt)}</div>
+        <div class="li-m">
+          ${d.funerailles?`<span>${fd(d.funerailles)}</span>`:''}
+          ${d.lieu?`<span>${esc(d.lieu)}</span>`:''}
+          ${d.id===CUR_DOSS_ID?'<span class="bdg bdg-gold">actif</span>':''}
+        </div>
+      </div>
+      <div class="li-acts">
+        <div class="act-row" style="opacity:1">
+          <button class="act-btn dl" onclick="event.stopPropagation();deleteDossier('${d.id}')" title="Supprimer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ── DÉPENSES ──
+function openAddDep(){
+  if(!CUR_DOSS_ID){toast('⚠ Créez d\'abord un dossier');openDossierModal();return}
+  depEId=null; document.getElementById('m-dep-ttl').textContent='Nouvelle dépense';
+  ['dep-lib','dep-mnt','dep-four','dep-note'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('dep-date').value=today(); openModal('m-dep');
+}
+function openEditDep(id){
+  const d=DB.depenses.find(x=>x.id===id);if(!d)return;
+  depEId=id; document.getElementById('m-dep-ttl').textContent='Modifier la dépense';
+  document.getElementById('dep-lib').value=d.libelle||'';
+  document.getElementById('dep-mnt').value=d.montant||'';
+  document.getElementById('dep-cat').value=d.categorie||'autre';
+  document.getElementById('dep-date').value=d.date||'';
+  document.getElementById('dep-four').value=d.fournisseur||'';
+  document.getElementById('dep-note').value=d.note||''; openModal('m-dep');
+}
+function saveDep(){
+  const lib=document.getElementById('dep-lib').value.trim();
+  const mnt=parseFloat(document.getElementById('dep-mnt').value);
+  if(!lib||isNaN(mnt)||mnt<=0){toast('⚠ Libellé et montant requis');return}
+  const o={_type:'depense',dossierId:CUR_DOSS_ID,libelle:lib,montant:mnt,
+    categorie:document.getElementById('dep-cat').value,
+    date:document.getElementById('dep-date').value||today(),
+    fournisseur:document.getElementById('dep-four').value.trim(),
+    note:document.getElementById('dep-note').value.trim(),updatedAt:new Date().toISOString()};
+  if(depEId){const i=DB.depenses.findIndex(x=>x.id===depEId);if(i>=0)DB.depenses[i]={...DB.depenses[i],...o};}
+  else{o.id=uid();o.createdAt=new Date().toISOString();DB.depenses.push(o);}
+  saveDB();cOv(document.getElementById('m-dep'));rDeps();rDash();
+  toast(depEId?'✓ Dépense modifiée':'✓ Dépense enregistrée');
+  if(driveToken) autoSync();
+}
+function delDep(id){if(!confirm('Supprimer ?'))return;DB.depenses=DB.depenses.filter(d=>d.id!==id);saveDB();rDeps();rDash();toast('Dépense supprimée');if(driveToken)autoSync()}
+function fDep(c,btn){activeDF=c;document.querySelectorAll('#page-depenses .tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');rDeps()}
+const CC={ceremoniel:'gold',logistique:'b',alimentation:'g',transport:'g',autre:'gray'};
+function rDeps(){
+  const deps=curDeps();
+  let it=[...deps];if(activeDF!=='all')it=it.filter(d=>d.categorie===activeDF);
+  it.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  document.getElementById('dep-lbl').textContent=it.length?`${it.length} dépense${it.length>1?'s':''}  ·  ${fmt(it.reduce((s,d)=>s+d.montant,0))}`:'Aucune dépense';
+  const el=document.getElementById('dep-list');
+  if(!it.length){el.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v10"/></svg><p>Aucune dépense${CUR_DOSS_ID?'':' — créez d\'abord un dossier'}</p></div>`;return}
+  el.innerHTML=it.map(d=>`<div class="li">
+    <div class="li-ico" style="background:rgba(224,122,122,.12)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e07a7a" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 10h4.5a1.5 1.5 0 0 1 0 3H9.5a1.5 1.5 0 0 0 0 3H15"/></svg></div>
+    <div class="li-body"><div class="li-t">${esc(d.libelle)}</div><div class="li-m"><span>${fd(d.date)}</span><span class="bdg bdg-${CC[d.categorie]||'gray'}">${d.categorie}</span>${d.fournisseur?`<span>${esc(d.fournisseur)}</span>`:''}</div></div>
+    <div class="li-acts">
+      <div style="font-size:.92rem;font-weight:500;color:var(--red)">-${fmt(d.montant)}</div>
+      <div class="act-row">
+        <button class="act-btn ed" onclick="openEditDep('${d.id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        <button class="act-btn dl" onclick="delDep('${d.id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg></button>
+      </div>
+    </div>
+  </div>`).join('');
+}
+
+// ── COTISATIONS ──
+function openAddCot(){
+  if(!CUR_DOSS_ID){toast('⚠ Créez d\'abord un dossier');openDossierModal();return}
+  cotEId=null; document.getElementById('m-cot-ttl').textContent='Nouvelle cotisation';
+  ['cot-nom','cot-prenom','cot-mnt','cot-detail','cot-domicile','cot-respdesi'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('cot-date').value=today();
+  popGrpSel('cot-grp',''); openModal('m-cot');
+}
+function openEditCot(id){
+  const c=DB.cotisations.find(x=>x.id===id);if(!c)return;
+  cotEId=id; document.getElementById('m-cot-ttl').textContent='Modifier la cotisation';
+  document.getElementById('cot-nom').value=c.nom||'';
+  document.getElementById('cot-prenom').value=c.prenom||'';
+  document.getElementById('cot-mnt').value=c.montant||'';
+  document.getElementById('cot-type').value=c.typeCot||'Cotisation Funérailles';
+  document.getElementById('cot-date').value=c.date||'';
+  document.getElementById('cot-detail').value=c.detail||'';
+  document.getElementById('cot-domicile').value=c.domicile||'';
+  document.getElementById('cot-respdesi').value=c.responsableDesigne||'';
+  document.getElementById('cot-mode').value=c.mode||'Espèces';
+  popGrpSel('cot-grp',c.groupeId||''); openModal('m-cot');
+}
+function popGrpSel(sid,sel){
+  document.getElementById(sid).innerHTML='<option value="">— Sans groupe —</option>'+curGrps().map(g=>`<option value="${g.id}"${g.id===sel?' selected':''}>${esc(g.nom)} (${g.type})</option>`).join('');
+}
+function saveCot(){
+  const nom=document.getElementById('cot-nom').value.trim();
+  const mnt=parseFloat(document.getElementById('cot-mnt').value);
+  if(!nom||isNaN(mnt)||mnt<0){toast('⚠ Nom requis et montant valide');return}
+  const o={_type:'cotisation',dossierId:CUR_DOSS_ID,
+    nom, prenom:document.getElementById('cot-prenom').value.trim(),
+    montant:mnt,
+    typeCot:document.getElementById('cot-type').value,
+    groupeId:document.getElementById('cot-grp').value,
+    mode:document.getElementById('cot-mode').value,
+    date:document.getElementById('cot-date').value||today(),
+    detail:document.getElementById('cot-detail').value.trim(),
+    domicile:document.getElementById('cot-domicile').value.trim(),
+    responsableDesigne:document.getElementById('cot-respdesi').value.trim(),
+    updatedAt:new Date().toISOString()};
+  if(cotEId){const i=DB.cotisations.findIndex(x=>x.id===cotEId);if(i>=0)DB.cotisations[i]={...DB.cotisations[i],...o};}
+  else{o.id=uid();o.createdAt=new Date().toISOString();DB.cotisations.push(o);}
+  saveDB();cOv(document.getElementById('m-cot'));rCots();rDash();
+  toast(cotEId?'✓ Cotisation modifiée':'✓ Cotisation enregistrée');
+  if(driveToken) autoSync();
+}
+function delCot(id){if(!confirm('Supprimer ?'))return;DB.cotisations=DB.cotisations.filter(c=>c.id!==id);saveDB();rCots();rDash();toast('Cotisation supprimée');if(driveToken)autoSync()}
+function rGrpChips(){
+  const chips=document.getElementById('grp-chips');
+  chips.innerHTML=[{id:'all',nom:'Tous'},...curGrps()].map(g=>`<div class="chip${g.id===activeGF?' active':''}" onclick="setGF('${g.id}',this)">${g.id==='all'?'Tous':esc(g.nom)}</div>`).join('');
+}
+function setGF(id,el){activeGF=id;document.querySelectorAll('#grp-chips .chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');rCots()}
+function rCots(){
+  rGrpChips();
+  let it=[...curCots()];if(activeGF!=='all')it=it.filter(c=>c.groupeId===activeGF);
+  it.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  document.getElementById('cot-lbl').textContent=it.length?`${it.length} cotisant${it.length>1?'s':''}  ·  ${fmt(it.reduce((s,c)=>s+c.montant,0))}`:'Aucune cotisation';
+  const el=document.getElementById('cot-list');
+  if(!it.length){el.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M20 7H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/></svg><p>Aucune cotisation</p></div>`;return}
+  el.innerHTML=it.map(c=>{
+    const g=curGrps().find(x=>x.id===c.groupeId);
+    return `<div class="li">
+      <div class="li-ico" style="background:rgba(82,183,136,.12)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#52b788" stroke-width="1.5" stroke-linecap="round"><circle cx="9" cy="7" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6"/><path d="M13 14.5a5.5 5.5 0 1 1 0 1"/><path d="M16 12v4M14 14h4"/></svg></div>
+      <div class="li-body">
+        <div class="li-t">${esc((c.prenom?c.prenom+' ':'')+c.nom)}</div>
+        <div class="li-m"><span>${fd(c.date)}</span>${g?`<span class="bdg bdg-b">${esc(g.nom)}</span>`:''}<span class="bdg bdg-gold">${esc(c.typeCot||'Cotisation')}</span>${c.domicile?`<span>${esc(c.domicile)}</span>`:''}</div>
+      </div>
+      <div class="li-acts">
+        <div style="font-size:.92rem;font-weight:500;color:var(--green)">+${fmt(c.montant)}</div>
+        <div class="act-row">
+          <button class="act-btn pr" onclick="printFiche('${c.id}')" title="Imprimer fiche"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg></button>
+          <button class="act-btn ed" onclick="openEditCot('${c.id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+          <button class="act-btn dl" onclick="delCot('${c.id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg></button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── GROUPES ──
+function openAddGrp(){
+  if(!CUR_DOSS_ID){toast('⚠ Créez d\'abord un dossier');return}
+  ['grp-nom','grp-resp','grp-obj'].forEach(i=>document.getElementById(i).value=''); openModal('m-grp');
+}
+function saveGrp(){
+  const nom=document.getElementById('grp-nom').value.trim();
+  if(!nom){toast('⚠ Nom requis');return}
+  DB.groupes.push({_type:'groupe',id:uid(),dossierId:CUR_DOSS_ID,nom,type:document.getElementById('grp-type').value,
+    responsable:document.getElementById('grp-resp').value.trim(),
+    objectif:parseFloat(document.getElementById('grp-obj').value)||0,
+    createdAt:new Date().toISOString()});
+  saveDB();cOv(document.getElementById('m-grp'));rGrps();rDash();toast('✓ Groupe créé');
+}
+function delGrp(id){
+  if(!confirm('Supprimer ?'))return;
+  DB.groupes=DB.groupes.filter(g=>g.id!==id);
+  DB.cotisations.forEach(c=>{if(c.groupeId===id)c.groupeId=''});
+  saveDB();rGrps();rDash();rCots();toast('Groupe supprimé');
+}
+const TC={quartier:'gold',ville:'b',village:'g',famille:'gold',association:'b',autre:'gray'};
+function rGrps(){
+  const el=document.getElementById('grp-list');
+  const grps=curGrps();
+  if(!grps.length){el.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="9" cy="7" r="3"/><circle cx="15" cy="7" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6h6c3.3 0 6 2.7 6 6"/></svg><p>Aucun groupe</p></div>`;return}
+  el.innerHTML=grps.map(g=>{
+    const cots=curCots().filter(c=>c.groupeId===g.id);
+    const tot=cots.reduce((s,c)=>s+c.montant,0);
+    const cnt=cots.length;
+    const pct=g.objectif>0?Math.min(100,Math.round(tot/g.objectif*100)):null;
+    return `<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.65rem">
+        <div><div style="font-weight:500;margin-bottom:3px">${esc(g.nom)}</div>
+          <div style="display:flex;gap:.4rem;align-items:center"><span class="bdg bdg-${TC[g.type]||'gray'}">${g.type}</span>${g.responsable?`<span style="font-size:.72rem;color:var(--ink-pale)">${esc(g.responsable)}</span>`:''}</div>
+        </div>
+        <div style="text-align:right"><div style="font-size:.95rem;font-weight:500;color:var(--green)">${fmt(tot)}</div><div style="font-size:.7rem;color:var(--ink-pale)">${cnt} cotisant${cnt>1?'s':''}</div></div>
+      </div>
+      ${pct!==null?`<div style="margin-bottom:.5rem"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:.7rem;color:var(--ink-pale)">Obj. ${fmt(g.objectif)}</span><span style="font-size:.7rem;color:var(--gold)">${pct}%</span></div><div class="pbar"><div class="pfill" style="width:${pct}%;background:var(--green)"></div></div></div>`:''}
+      <div style="display:flex;justify-content:flex-end;margin-top:.5rem"><button class="btn btn-d btn-sm" onclick="delGrp('${g.id}')">Supprimer</button></div>
+    </div>`;
+  }).join('');
+}
+
+// ── DASHBOARD ──
+function rDash(){
+  const cots=curCots(), deps=curDeps();
+  const tC=cots.reduce((s,c)=>s+c.montant,0);
+  const tD=deps.reduce((s,d)=>s+d.montant,0);
+  const sol=tC-tD;
+  document.getElementById('s-dep').textContent=fmt(tD);
+  document.getElementById('s-ndep').textContent=`${deps.length} entrée${deps.length!==1?'s':''}`;
+  document.getElementById('s-cot').textContent=fmt(tC);
+  document.getElementById('s-ncot').textContent=`${cots.length} cotisant${cots.length!==1?'s':''}`;
+  const se=document.getElementById('s-solde');
+  se.textContent=fmt(Math.abs(sol))+(sol<0?' (déficit)':'');
+  se.className='sc-v '+(sol>=0?'g':'r');
+  const grps=curGrps();
+  document.getElementById('s-grp').textContent=grps.length;
+  const pct=tD>0?Math.min(100,Math.round(tC/tD*100)):(tC>0?100:0);
+  document.getElementById('pct-lbl').textContent=pct+'%';
+  document.getElementById('pfill').style.width=pct+'%';
+  const d=curD();
+  document.getElementById('doss-lbl').textContent=d?(d.defunt+(d.lieu?' — '+d.lieu:'')):'Aucun dossier actif';
+  document.getElementById('doss-pill-btn').innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="5" rx="1"/><path d="M3 10h18M3 17h18"/></svg> ${DB.dossiers.length} dossier${DB.dossiers.length!==1?'s':''}`;
+  const sum=document.getElementById('grp-sum');
+  if(!grps.length){sum.innerHTML=`<div style="font-size:.82rem;color:var(--ink-pale);text-align:center;padding:.75rem 0">Créez des groupes pour voir la répartition</div>`;return}
+  sum.innerHTML=grps.map(g=>{
+    const t=cots.filter(c=>c.groupeId===g.id).reduce((s,c)=>s+c.montant,0);
+    const cnt=cots.filter(c=>c.groupeId===g.id).length;
+    const p=tC>0?Math.round(t/tC*100):0;
+    return `<div class="li" style="padding:.7rem"><div class="li-body">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:.86rem;font-weight:500">${esc(g.nom)}</span><span style="font-size:.86rem;color:var(--green)">${fmt(t)}</span></div>
+      <div class="pbar"><div class="pfill" style="width:${p}%;background:var(--gold)"></div></div>
+      <div style="display:flex;justify-content:space-between;margin-top:3px"><span style="font-size:.68rem;color:var(--ink-pale)">${cnt} cotisant${cnt>1?'s':''}</span><span style="font-size:.68rem;color:var(--ink-pale)">${p}%</span></div>
+    </div></div>`;
+  }).join('');
+}
+
+// ── ARCHIVES ──
+function importArchive(inp){
+  const file=inp.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const lines=e.target.result.split('\n').filter(l=>l.trim());
+      let a={dossier:null,depenses:[],cotisations:[],groupes:[],_at:new Date().toISOString(),_fn:file.name};
+      lines.forEach(l=>{try{const o=JSON.parse(l);if(o._type==='dossier')a.dossier=o;else if(o._type==='depense')a.depenses.push(o);else if(o._type==='cotisation')a.cotisations.push(o);else if(o._type==='groupe')a.groupes.push(o);}catch(e2){}});
+      DB.archives.push(a);saveDB();rArch();toast(`✓ Archive importée`);
+    }catch(err){toast('⚠ Erreur import archive')}
+  };
+  r.readAsText(file);inp.value='';
+}
+function delArch(i){if(!confirm('Supprimer ?'))return;DB.archives.splice(i,1);saveDB();rArch();toast('Archive supprimée')}
+function rArch(){
+  const el=document.getElementById('arch-list');
+  if(!DB.archives.length){el.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M21 8v13H3V8"/><path d="M23 3H1v5h22V3z"/></svg><p>Aucune archive.<br>Importez d'anciens fichiers .ndjson.</p></div>`;return}
+  el.innerHTML=DB.archives.map((a,i)=>{
+    const tC=a.cotisations.reduce((s,c)=>s+c.montant,0);
+    return `<div class="arch-card" style="background:linear-gradient(135deg,var(--ink-soft),rgba(30,58,95,.3));border:1px solid rgba(147,197,253,.15);border-radius:var(--r);padding:1rem 1.1rem">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.65rem">
+        <div><div style="font-weight:500;margin-bottom:3px">${esc(a.dossier?.defunt||a._fn||'Archive')}</div>
+          <div style="display:flex;gap:.4rem;flex-wrap:wrap"><span class="bdg bdg-b">archive</span>${a.dossier?.funerailles?`<span style="font-size:.72rem;color:var(--ink-pale)">${fd(a.dossier.funerailles)}</span>`:''}</div>
+        </div>
+        <button class="btn btn-d btn-sm" onclick="delArch(${i})">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.7rem">
+        <div style="background:rgba(0,0,0,.25);border-radius:6px;padding:.6rem;text-align:center"><div style="font-size:.65rem;color:var(--ink-pale);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">Cotisations</div><div style="font-size:.88rem;font-weight:500;color:var(--green)">${fmt(tC)}</div></div>
+        <div style="background:rgba(0,0,0,.25);border-radius:6px;padding:.6rem;text-align:center"><div style="font-size:.65rem;color:var(--ink-pale);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">Cotisants</div><div style="font-size:.88rem;font-weight:500;color:var(--blue)">${a.cotisations.length}</div></div>
+      </div>
+      <button class="btn btn-b btn-sm btn-full" onclick="doPrint('cmp_${i}')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
+        Imprimer comparaison
+      </button>
+    </div>`;
+  }).join('');
+}
+
+// ── NDJSON EXPORT/IMPORT ──
+function exportNDJSON(){
+  const lines=[];
+  // Export ALL dossiers
+  DB.dossiers.forEach(d=>lines.push(JSON.stringify(d)));
+  DB.groupes.forEach(g=>lines.push(JSON.stringify(g)));
+  DB.depenses.forEach(d=>lines.push(JSON.stringify(d)));
+  DB.cotisations.forEach(c=>lines.push(JSON.stringify(c)));
+  const blob=new Blob([lines.join('\n')],{type:'application/x-ndjson'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`memorial_complet_${today()}.ndjson`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  toast('✓ Fichier exporté (tous dossiers)');cOv(document.getElementById('m-data'));
+}
+function importMain(inp){
+  const file=inp.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const lines=e.target.result.split('\n').filter(l=>l.trim());
+      let imp={dossiers:[],depenses:[],cotisations:[],groupes:[],archives:DB.archives};
+      lines.forEach(l=>{try{const o=JSON.parse(l);
+        if(o._type==='dossier')imp.dossiers.push(o);
+        else if(o._type==='depense')imp.depenses.push(o);
+        else if(o._type==='cotisation')imp.cotisations.push(o);
+        else if(o._type==='groupe')imp.groupes.push(o);
+      }catch(e2){}});
+      DB={...imp};
+      CUR_DOSS_ID=DB.dossiers[0]?.id||null;
+      saveDB();rAll();cOv(document.getElementById('m-data'));
+      toast(`✓ ${DB.dossiers.length} dossier(s), ${DB.cotisations.length} cotisations importés`);
+    }catch(err){toast('⚠ Erreur import')}
+  };
+  r.readAsText(file);inp.value='';
+}
+function confirmReset(){
+  if(!confirm('Supprimer TOUTES les données (tous dossiers) ?'))return;
+  DB={dossiers:[],depenses:[],cotisations:[],groupes:[],archives:[]};
+  CUR_DOSS_ID=null; saveDB();rAll();cOv(document.getElementById('m-data'));toast('Données réinitialisées');
+}
+function dbToNDJSON(){
+  const lines=[];
+  DB.dossiers.forEach(d=>lines.push(JSON.stringify(d)));
+  DB.groupes.forEach(g=>lines.push(JSON.stringify(g)));
+  DB.depenses.forEach(d=>lines.push(JSON.stringify(d)));
+  DB.cotisations.forEach(c=>lines.push(JSON.stringify(c)));
+  return lines.join('\n');
+}
+
+// ═══════════════════════════════════════════
+// GOOGLE DRIVE INTEGRATION
+// ═══════════════════════════════════════════
+const OAUTH_CONFIG = {
+  client_id: '695303092999-qcp9grf8oe85g4jee0lpicrc9aaekb4k.apps.googleusercontent.com',
+  api_key: 'AIzaSyDfmG4iN7b52f5NCTPl8bSNt1yGBJeUL2U',
+  project_id: 'memorial-496915',
+  auth_uri: 'https://accounts.google.com/o/oauth2/auth',
+  token_uri: 'https://oauth2.googleapis.com/token',
+  javascript_origins: ['https://doubigue.github.io']
+};
+
+const GAPI_SCRIPT='https://apis.google.com/js/api.js';
+const GSI_SCRIPT='https://accounts.google.com/gsi/client';
+let gapiLoaded=false, gsiLoaded=false, tokenClient=null;
+
+function openDriveModal(){
+  updateDriveUI();
+  openModal('m-drive');
+}
+function updateDriveUI(){
+  const dot=document.getElementById('drive-dot');
+  const userDiv=document.getElementById('drive-user-info');
+  const syncBtn=document.getElementById('drive-sync-btn');
+  const loadBtn=document.getElementById('drive-load-btn');
+  const statusArea=document.getElementById('drive-status-area');
+  if(driveToken&&driveUserInfo){
+    dot.className='drive-dot on';
+    userDiv.style.display='flex';
+    document.getElementById('drive-user-name').textContent=driveUserInfo.name||'Connecté';
+    document.getElementById('drive-user-email').textContent=driveUserInfo.email||'—';
+    syncBtn.style.display='flex';
+    loadBtn.style.display='flex';
+    statusArea.innerHTML=`<div class="drive-banner"><svg viewBox="0 0 24 24" fill="none" stroke="#34a853" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><div class="drive-banner-text"><div class="drive-banner-title">Drive connecté</div><div class="drive-banner-sub">Synchronisation automatique activée${driveFileId?' · Fichier ID: '+driveFileId.slice(0,16)+'…':''}</div></div></div>`;
+  }else{
+    dot.className='drive-dot off';
+    userDiv.style.display='none';
+    syncBtn.style.display='none';
+    loadBtn.style.display='none';
+    statusArea.innerHTML=`<div class="drive-banner" style="border-color:rgba(234,67,53,.25)"><svg viewBox="0 0 24 24" fill="none" stroke="#ea4335" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div class="drive-banner-text"><div class="drive-banner-title">Non connecté</div><div class="drive-banner-sub">Configurez vos identifiants Google et connectez-vous</div></div></div>`;
+  }
+}
+function loadGapiScripts(){
+  return new Promise((res)=>{
+    if(gapiLoaded&&gsiLoaded){res();return}
+    const s1=document.createElement('script');s1.src=GAPI_SCRIPT;
+    s1.onload=()=>{
+      gapi.load('client',async()=>{
+        const apiKey=document.getElementById('drive-api-key').value.trim()||OAUTH_CONFIG.api_key;
+        if(apiKey){try{await gapi.client.init({apiKey,discoveryDocs:['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']});}catch(e){}}
+        gapiLoaded=true;if(gapiLoaded&&gsiLoaded)res();
+      });
+    };
+    document.head.appendChild(s1);
+    const s2=document.createElement('script');s2.src=GSI_SCRIPT;
+    s2.onload=()=>{gsiLoaded=true;if(gapiLoaded&&gsiLoaded)res()};
+    document.head.appendChild(s2);
+  });
+}
+async function driveConnect(){
+  const clientId=document.getElementById('drive-client-id').value.trim()||OAUTH_CONFIG.client_id;
+  if(!clientId){toast('⚠ Saisissez le Client ID Google');return}
+  toast('Chargement Google…');
+  try{
+    await loadGapiScripts();
+    tokenClient=google.accounts.oauth2.initTokenClient({
+      client_id:clientId,
+      scope:'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+      callback:async(resp)=>{
+        if(resp.error){toast('⚠ Connexion refusée: '+resp.error);return}
+        driveToken=resp.access_token;
+        gapi.client.setToken({access_token:driveToken});
+        // Get user info
+        try{
+          const uResp=await fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json',{headers:{Authorization:'Bearer '+driveToken}});
+          driveUserInfo=await uResp.json();
+        }catch(e){driveUserInfo={name:'Utilisateur Google',email:'—'}}
+        // Get or create file
+        const fid=document.getElementById('drive-file-id').value.trim();
+        if(fid){driveFileId=fid;}
+        else{await driveEnsureFile();}
+        saveDB();updateDriveUI();
+        toast('✓ Connecté à Google Drive');
+        await driveSyncNow();
+      }
+    });
+    tokenClient.requestAccessToken({prompt:'select_account'});
+  }catch(err){toast('⚠ Erreur Google: '+err.message);console.error(err)}
+}
+async function driveEnsureFile(){
+  // Search for existing file
+  try{
+    const res=await gapi.client.drive.files.list({q:"name='memorial_complet.ndjson' and trashed=false",fields:'files(id,name)'});
+    const files=res.result.files;
+    if(files&&files.length>0){driveFileId=files[0].id;document.getElementById('drive-file-id').value=driveFileId;return}
+  }catch(e){}
+  // Create new file
+  try{
+    const meta={name:'memorial_complet.ndjson',mimeType:'application/x-ndjson'};
+    const res=await gapi.client.drive.files.create({resource:meta,fields:'id'});
+    driveFileId=res.result.id;
+    document.getElementById('drive-file-id').value=driveFileId;
+    toast('✓ Fichier Drive créé: memorial_complet.ndjson');
+  }catch(e){toast('⚠ Impossible de créer le fichier Drive')}
+}
+async function driveSyncNow(){
+  if(!driveToken){toast('⚠ Non connecté à Drive');return}
+  if(!driveFileId){await driveEnsureFile();}
+  if(!driveFileId){toast('⚠ ID fichier Drive manquant');return}
+  try{
+    const content=dbToNDJSON();
+    const res=await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`,{
+      method:'PATCH',headers:{'Authorization':'Bearer '+driveToken,'Content-Type':'application/x-ndjson'},body:content
+    });
+    if(res.ok){toast('✓ Synchronisé sur Drive');}
+    else{const err=await res.json();toast('⚠ Erreur sync: '+(err.error?.message||res.status))}
+  }catch(e){toast('⚠ Erreur réseau Drive')}
+}
+async function driveLoadData(){
+  if(!driveToken||!driveFileId){toast('⚠ Non connecté');return}
+  try{
+    const res=await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`,{headers:{Authorization:'Bearer '+driveToken}});
+    if(!res.ok){toast('⚠ Fichier introuvable sur Drive');return}
+    const text=await res.text();
+    const lines=text.split('\n').filter(l=>l.trim());
+    let imp={dossiers:[],depenses:[],cotisations:[],groupes:[],archives:DB.archives};
+    lines.forEach(l=>{try{const o=JSON.parse(l);
+      if(o._type==='dossier')imp.dossiers.push(o);
+      else if(o._type==='depense')imp.depenses.push(o);
+      else if(o._type==='cotisation')imp.cotisations.push(o);
+      else if(o._type==='groupe')imp.groupes.push(o);
+    }catch(e2){}});
+    DB={...imp};CUR_DOSS_ID=DB.dossiers[0]?.id||null;
+    saveDB();rAll();cOv(document.getElementById('m-drive'));
+    toast(`✓ Données chargées depuis Drive`);
+  }catch(e){toast('⚠ Erreur chargement Drive')}
+}
+function autoSync(){if(driveToken&&driveFileId)setTimeout(driveSyncNow,1500)}
+function driveDisconnect(){
+  driveToken=null;driveUserInfo=null;
+  if(typeof google!=='undefined')google.accounts.oauth2.revoke(driveToken,()=>{});
+  updateDriveUI();toast('Déconnecté de Drive');
+}
+
+// ═══════════════════════════════════════════
+// PRINT ENGINE
+// ═══════════════════════════════════════════
+const leafSVG=`<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 24C4 24 6 14 14 10C22 6 24 4 24 4C24 4 22 14 14 18C6 22 4 24 4 24Z" stroke="#c9a84c" stroke-width="1.2" fill="none"/><path d="M4 24L14 14" stroke="#c9a84c" stroke-width="1" stroke-dasharray="2 2"/></svg>`;
+
+function pHdr(doss){
+  const d=doss||curD()||{};
+  return `<div class="pr-hdr">
+    <div><div class="pr-brand">Mémorial</div><div class="pr-brand-sub">Gestion funéraire professionnelle</div></div>
+    <div class="pr-meta">
+      <div>Dossier&nbsp;: <strong>${esc(d.defunt||'—')}</strong></div>
+      ${d.funerailles?`<div>Funérailles&nbsp;: <strong>${fd(d.funerailles)}</strong></div>`:''}
+      ${d.lieu?`<div>Lieu&nbsp;: <strong>${esc(d.lieu)}</strong></div>`:''}
+      ${d.responsable?`<div>Responsable&nbsp;: <strong>${esc(d.responsable)}</strong></div>`:''}
+      <div>Imprimé le ${pNow()}</div>
+    </div>
+  </div>`;
+}
+function pFoot(){return`<div class="pr-foot"><span class="pr-foot-sig">Mémorial — Gestion Funéraire</span><span>Document confidentiel · ${pNow()}</span></div>`}
+function pStats(cots,deps){
+  const tC=cots.reduce((s,c)=>s+c.montant,0),tD=deps.reduce((s,d)=>s+d.montant,0),sol=tC-tD;
+  return `<div class="pr-stats">
+    <div class="pr-stat"><div class="pr-sl">Total cotisations</div><div class="pr-sv g">${fmt(tC)}</div></div>
+    <div class="pr-stat"><div class="pr-sl">Total dépenses</div><div class="pr-sv r">${fmt(tD)}</div></div>
+    <div class="pr-stat"><div class="pr-sl">Solde net</div><div class="pr-sv ${sol>=0?'g':'r'}">${fmt(Math.abs(sol))}${sol<0?' déf.':''}</div></div>
+  </div>`;
+}
+
+// ─── FICHE INDIVIDUELLE ───
+function buildFiche(cot, doss, grps){
+  const d=doss||{};
+  const g=grps.find(x=>x.id===cot.groupeId);
+  const allCotsSamePersone=curCots().filter(c=>c.nom===cot.nom);
+  const totalPersonne=allCotsSamePersone.reduce((s,c)=>s+c.montant,0);
+  // Period
+  const dates=allCotsSamePersone.map(c=>c.date).filter(Boolean).sort();
+  const periode=dates.length>1?`${fd(dates[0])} au ${fd(dates[dates.length-1])}`:fd(cot.date||'');
+  const rows=allCotsSamePersone.map(c=>`
+    <tr>
+      <td>${fd(c.date)}</td>
+      <td class="l">${esc(c.typeCot||'Cotisation')}</td>
+      <td class="l">${c.detail?`(${esc(c.detail)})`:c.mode?`(${esc(c.mode)})`:'—'}</td>
+      <td>${c.montant>0?fmt(c.montant):'—'}</td>
+      <td class="l">${c.responsableDesigne?`<strong>${esc(c.responsableDesigne)}</strong>`:`<span style="color:#999;font-style:italic">—</span>`}</td>
+    </tr>`).join('');
+  return `<div class="fiche-page" style="position:relative">
+    <!-- Coins décoratifs -->
+    <div class="fiche-corner-tl">${leafSVG}</div>
+    <div class="fiche-corner-tr">${leafSVG}</div>
+    <div class="fiche-corner-bl">${leafSVG}</div>
+    <div class="fiche-corner-br">${leafSVG}</div>
+
+    <div class="fiche-frame">
+      <!-- Titre -->
+      <div class="fiche-title-band">
+        <div class="fiche-title-main">Fiche de Cotisation — Aide au Défunt</div>
+        <div class="fiche-title-sub">Document officiel · ${esc(d.defunt||'—')}</div>
+      </div>
+
+      <div class="fiche-body">
+        <!-- En-tête infos -->
+        <div class="fiche-infos">
+          <div class="fiche-infos-left">
+            <div class="fiche-section-lbl">Infos cotisant</div>
+            <div class="fiche-info-row"><span class="fiche-info-key">Nom :</span><span class="fiche-info-val"><strong>${esc(cot.nom)}</strong></span></div>
+            ${cot.prenom?`<div class="fiche-info-row"><span class="fiche-info-key">Prénom :</span><span class="fiche-info-val">${esc(cot.prenom)}</span></div>`:''}
+            ${cot.domicile?`<div class="fiche-info-row"><span class="fiche-info-key">Domicile :</span><span class="fiche-info-val">${esc(cot.domicile)}</span></div>`:''}
+            ${g?`<div class="fiche-info-row"><span class="fiche-info-key">Groupe :</span><span class="fiche-info-val"><strong>${esc(g.nom)}</strong></span></div>`:''}
+          </div>
+
+          <div class="fiche-infos-center">
+            <div class="fiche-icon-circle">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8a6820" stroke-width="1.5">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+            </div>
+            <div class="fiche-org-name">${esc(d.organisation||'Entraide\nSolidaire')}</div>
+            <div class="fiche-org-sub">${esc(d.lieu||'')}</div>
+          </div>
+
+          <div class="fiche-infos-right">
+            <div class="fiche-section-lbl">Personnes responsables désignées</div>
+            ${cot.responsableDesigne?`<div style="font-size:8.5pt;color:#1a1a2e;margin-top:4pt">${esc(cot.responsableDesigne)}</div>`:
+            `<div style="font-size:7.5pt;color:#aaa;font-style:italic;margin-top:4pt">(Pas de responsable désigné)</div>`}
+            ${d.responsable?`<div style="font-size:7.5pt;color:#888;margin-top:6pt;border-top:.5pt solid #eee;padding-top:4pt">Resp. funérailles : <strong>${esc(d.responsable)}</strong></div>`:''}
+          </div>
+        </div>
+
+        <div class="fiche-periode">Période&nbsp;: <strong>${periode||'—'}</strong></div>
+
+        <!-- Tableau -->
+        <table class="fiche-tbl">
+          <caption>Personnes responsables par cotisation</caption>
+          <thead>
+            <tr>
+              <th style="width:52pt">Date<br>(Jour/Mois)</th>
+              <th>Type de cotisation</th>
+              <th>Détails du paiement / Matériel</th>
+              <th style="width:55pt">Montant</th>
+              <th>Personne responsable des funérailles</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+          <tfoot>
+            <tr class="fiche-tot-row">
+              <td colspan="3" style="text-align:right;font-weight:700;letter-spacing:.05em">TOTAL DU DOSSIER (FCFA) :</td>
+              <td><strong>${fmt(totalPersonne)}</strong></td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <!-- Total mise en valeur -->
+        <div style="text-align:center;margin:6pt 0">
+          <div class="fiche-total-box">${fmt(totalPersonne)}</div>
+        </div>
+
+        <!-- Pied de fiche -->
+        <div class="fiche-footer">
+          <div class="fiche-footer-motto">solidarité | entraide | respect</div>
+          <div class="fiche-footer-date">Imprimé le ${pNow()}</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ─── PRINT DISPATCHER ───
+function openPrintModal(){
+  const ap=document.getElementById('arch-print-area');
+  ap.innerHTML=DB.archives.length?'<div style="margin-top:.6rem;border-top:1px solid rgba(255,255,255,.06);padding-top:.7rem;display:flex;flex-direction:column;gap:.4rem">'
+    +DB.archives.map((a,i)=>`<button class="btn btn-b btn-sm btn-full" onclick="doPrint('cmp_${i}')">Comparer avec : ${esc(a.dossier?.defunt||a._fn||'Archive '+(i+1))}</button>`).join('')+'</div>':'';
+  openModal('m-print');
+}
+function printFiche(cotId){
+  const c=DB.cotisations.find(x=>x.id===cotId);if(!c)return;
+  const html=buildFiche(c,curD(),curGrps());
+  document.getElementById('print-zone').innerHTML=html;
+  cOv(document.getElementById('m-cot'));
+  setTimeout(()=>window.print(),200);
+}
+function doPrint(type){
+  cOv(document.getElementById('m-print'));
+  let html='';
+  const cots=curCots(), deps=curDeps(), grps=curGrps(), doss=curD();
+  if(type==='fiche_all') html=bFicheAll(cots,deps,grps,doss);
+  else if(type==='global') html=bGlobal(cots,deps,grps,doss);
+  else if(type==='par_groupe') html=bParGroupe(cots,deps,grps,doss);
+  else if(type==='par_responsable') html=bParResp(cots,deps,grps,doss);
+  else if(type==='depenses') html=bDeps(cots,deps,grps,doss);
+  else if(type==='complet') html=bGlobal(cots,deps,grps,doss,true)+bParGroupe(cots,deps,grps,doss,false)+bDeps(cots,deps,grps,doss,false);
+  else if(type==='tous_dossiers') html=bTousDossiers();
+  else if(type.startsWith('cmp_')) html=bCompare(parseInt(type.split('_')[1]),cots,deps,grps,doss);
+  document.getElementById('print-zone').innerHTML=html;
+  setTimeout(()=>window.print(),250);
+}
+
+function bFicheAll(cots,deps,grps,doss){
+  if(!cots.length) return '<div class="pr-page"><p style="margin-top:40pt;text-align:center;font-size:12pt;color:#999">Aucun cotisant dans ce dossier.</p></div>';
+  // One fiche per unique name
+  const names=[...new Set(cots.map(c=>c.nom))].sort();
+  return names.map(nom=>{
+    const c=cots.find(x=>x.nom===nom);
+    return buildFiche(c,doss,grps);
+  }).join('');
+}
+
+function bGlobal(cots,deps,grps,doss,withHdr=true){
+  const sorted=[...cots].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const tC=sorted.reduce((s,c)=>s+c.montant,0);
+  const rows=sorted.map((c,i)=>{
+    const g=grps.find(x=>x.id===c.groupeId);
+    return `<tr><td>${i+1}</td><td><strong>${esc((c.prenom?c.prenom+' ':'')+c.nom)}</strong></td><td class="r">${fmt(c.montant)}</td><td>${g?`<span class="pr-bdg b">${esc(g.nom)}</span>`:'—'}</td><td>${fd(c.date)}</td><td>${esc(c.mode||'—')}</td><td style="font-size:7pt">${esc(c.typeCot||'—')}</td></tr>`;
+  }).join('');
+  return `<div class="pr-page">${withHdr?pHdr(doss):''}
+    <div class="pr-ttl">Liste globale des cotisations</div>
+    <div class="pr-sub">${sorted.length} cotisant${sorted.length>1?'s':''} · Tous groupes</div>
+    ${pStats(cots,deps)}<div class="pr-rule"></div>
+    <table class="pr-tbl"><thead><tr><th style="width:18pt">#</th><th>Cotisant</th><th class="r" style="width:72pt">Montant</th><th style="width:70pt">Groupe</th><th style="width:52pt">Date</th><th style="width:62pt">Paiement</th><th>Type</th></tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr class="tot"><td colspan="2">TOTAL</td><td class="r">${fmt(tC)}</td><td colspan="4">${sorted.length} cotisant${sorted.length>1?'s':''}</td></tr></tfoot></table>
+    <div class="pr-signs">
+      <div class="pr-sign">Responsable<br><br>${esc(doss?.responsable||'_______________')}</div>
+      <div class="pr-sign">Trésorier<br><br>_______________</div>
+      <div class="pr-sign">Date &amp; Signature<br><br>_______________</div>
+    </div>${pFoot()}</div>`;
+}
+
+function bParGroupe(cots,deps,grps,doss,withHdr=true){
+  const tAll=cots.reduce((s,c)=>s+c.montant,0);
+  let blks='';
+  grps.forEach(g=>{
+    const gc=cots.filter(c=>c.groupeId===g.id).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+    const tot=gc.reduce((s,c)=>s+c.montant,0);
+    const pct=tAll>0?Math.round(tot/tAll*100):0;
+    const rows=gc.map((c,i)=>`<tr><td>${i+1}</td><td><strong>${esc((c.prenom?c.prenom+' ':'')+c.nom)}</strong></td><td class="r">${fmt(c.montant)}</td><td>${fd(c.date)}</td><td>${esc(c.mode||'—')}</td></tr>`).join('');
+    blks+=`<div class="pr-grp-blk"><div class="pr-grp-hdr"><div><div class="pr-grp-nm">${esc(g.nom)}</div><div style="font-size:7pt;color:#888;margin-top:1pt">${g.type}${g.responsable?' · '+esc(g.responsable):''}</div></div><div style="text-align:right"><div class="pr-grp-tot">${fmt(tot)}</div><div style="font-size:7pt;color:#888">${gc.length} cotisant${gc.length>1?'s':''} · ${pct}%</div></div></div>
+    ${gc.length?`<table class="pr-tbl" style="margin:0"><thead><tr><th style="width:18pt">#</th><th>Cotisant</th><th class="r" style="width:72pt">Montant</th><th style="width:52pt">Date</th><th>Paiement</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="tot"><td colspan="2">Sous-total</td><td class="r">${fmt(tot)}</td><td colspan="2"></td></tr></tfoot></table>`:'<div style="padding:6pt 8pt;font-size:8pt;color:#aaa;font-style:italic">Aucune cotisation</div>'}
+    </div>`;
+  });
+  const sans=cots.filter(c=>!c.groupeId||!grps.find(g=>g.id===c.groupeId));
+  if(sans.length){
+    const tot=sans.reduce((s,c)=>s+c.montant,0);
+    blks+=`<div class="pr-grp-blk"><div class="pr-grp-hdr"><div class="pr-grp-nm" style="color:#aaa;font-style:italic">Sans groupe</div><div class="pr-grp-tot" style="color:#aaa">${fmt(tot)}</div></div><table class="pr-tbl" style="margin:0"><thead><tr><th>#</th><th>Cotisant</th><th class="r">Montant</th><th>Date</th><th>Paiement</th></tr></thead><tbody>${sans.map((c,i)=>`<tr><td>${i+1}</td><td><strong>${esc(c.nom)}</strong></td><td class="r">${fmt(c.montant)}</td><td>${fd(c.date)}</td><td>${esc(c.mode||'—')}</td></tr>`).join('')}</tbody></table></div>`;
+  }
+  return `<div class="pr-page">${withHdr?pHdr(doss):''}
+    <div class="pr-ttl">Cotisations par groupe</div>
+    <div class="pr-sub">${grps.length} groupe${grps.length>1?'s':''} · ${cots.length} cotisant${cots.length>1?'s':''}</div>
+    ${pStats(cots,deps)}<div class="pr-rule"></div>${blks}${pFoot()}</div>`;
+}
+
+function bParResp(cots,deps,grps,doss,withHdr=true){
+  const map={};
+  grps.forEach(g=>{const k=g.responsable||'Sans responsable';if(!map[k])map[k]=[]});
+  cots.forEach(c=>{const g=grps.find(x=>x.id===c.groupeId);const k=g?.responsable||'Sans responsable';if(!map[k])map[k]=[];map[k].push({...c,_gn:g?.nom||'—'})});
+  let blks='';
+  Object.entries(map).forEach(([r,cs])=>{
+    if(!cs.length)return;
+    const tot=cs.reduce((s,c)=>s+c.montant,0);
+    blks+=`<div style="margin-bottom:12pt"><div class="pr-sec">${esc(r)}</div><div class="pr-sec-sub">${cs.length} cotisant${cs.length>1?'s':''} · ${fmt(tot)}</div>
+    <table class="pr-tbl"><thead><tr><th>#</th><th>Cotisant</th><th class="r" style="width:72pt">Montant</th><th style="width:72pt">Groupe</th><th style="width:52pt">Date</th><th>Paiement</th></tr></thead>
+    <tbody>${cs.map((c,i)=>`<tr><td>${i+1}</td><td><strong>${esc((c.prenom?c.prenom+' ':'')+c.nom)}</strong></td><td class="r">${fmt(c.montant)}</td><td><span class="pr-bdg b">${esc(c._gn)}</span></td><td>${fd(c.date)}</td><td>${esc(c.mode||'—')}</td></tr>`).join('')}</tbody>
+    <tfoot><tr class="tot"><td colspan="2">Total ${esc(r)}</td><td class="r">${fmt(tot)}</td><td colspan="3"></td></tr></tfoot></table></div>`;
+  });
+  return `<div class="pr-page">${withHdr?pHdr(doss):''}
+    <div class="pr-ttl">Rapport par responsable</div>
+    <div class="pr-sub">Ventilation par responsable de groupe</div>
+    ${pStats(cots,deps)}<div class="pr-rule"></div>
+    ${blks||'<p style="font-size:8pt;color:#aaa;font-style:italic;margin-top:10pt">Aucun responsable défini.</p>'}${pFoot()}</div>`;
+}
+
+function bDeps(cots,deps,grps,doss,withHdr=true){
+  const sorted=[...deps].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const tD=sorted.reduce((s,d)=>s+d.montant,0);
+  const cats={};sorted.forEach(d=>{cats[d.categorie]=(cats[d.categorie]||0)+d.montant});
+  return `<div class="pr-page">${withHdr?pHdr(doss):''}
+    <div class="pr-ttl">Relevé des dépenses</div>
+    <div class="pr-sub">${sorted.length} dépense${sorted.length>1?'s':''} · Total ${fmt(tD)}</div>
+    <div class="pr-rule"></div>
+    <table class="pr-tbl"><thead><tr><th>#</th><th>Libellé</th><th class="r" style="width:72pt">Montant</th><th style="width:72pt">Catégorie</th><th style="width:52pt">Date</th><th>Fournisseur</th></tr></thead>
+    <tbody>${sorted.map((d,i)=>`<tr><td>${i+1}</td><td><strong>${esc(d.libelle)}</strong></td><td class="r">${fmt(d.montant)}</td><td><span class="pr-bdg gold">${d.categorie}</span></td><td>${fd(d.date)}</td><td>${esc(d.fournisseur||'—')}</td></tr>`).join('')}</tbody>
+    <tfoot><tr class="tot"><td colspan="2">TOTAL</td><td class="r">${fmt(tD)}</td><td colspan="3"></td></tr></tfoot></table>
+    ${Object.keys(cats).length>1?`<div class="pr-sec" style="font-size:10pt">Par catégorie</div><table class="pr-tbl"><thead><tr><th colspan="2">Catégorie</th><th class="r">Montant</th><th colspan="3">Part</th></tr></thead><tbody>${Object.entries(cats).map(([c,v])=>`<tr><td colspan="2">${c}</td><td class="r">${fmt(v)}</td><td colspan="3">${Math.round(v/tD*100)}%</td></tr>`).join('')}</tbody></table>`:''}
+    ${pFoot()}</div>`;
+}
+
+function bTousDossiers(){
+  if(!DB.dossiers.length) return '<div class="pr-page"><p style="margin:40pt;text-align:center;font-size:12pt;color:#999">Aucun dossier.</p></div>';
+  let pages='';
+  // Summary page
+  const totalAllCots=DB.cotisations.reduce((s,c)=>s+c.montant,0);
+  const totalAllDeps=DB.depenses.reduce((s,d)=>s+d.montant,0);
+  const summaryRows=DB.dossiers.map(d=>{
+    const cots=DB.cotisations.filter(c=>c.dossierId===d.id);
+    const deps=DB.depenses.filter(x=>x.dossierId===d.id);
+    const tC=cots.reduce((s,c)=>s+c.montant,0);
+    const tD=deps.reduce((s,x)=>s+x.montant,0);
+    return `<tr><td><strong>${esc(d.defunt)}</strong></td><td>${fd(d.funerailles)}</td><td>${esc(d.lieu||'—')}</td><td>${esc(d.responsable||'—')}</td><td class="r" style="color:#2d6a4f">${fmt(tC)}</td><td class="r" style="color:#9b2226">${fmt(tD)}</td><td class="r" style="${(tC-tD)>=0?'color:#2d6a4f':'color:#9b2226'}">${fmt(tC-tD)}</td><td class="r">${cots.length}</td></tr>`;
+  }).join('');
+  pages+=`<div class="pr-page">
+    <div class="pr-hdr"><div><div class="pr-brand">Mémorial</div><div class="pr-brand-sub">Vue globale — Tous dossiers</div></div><div class="pr-meta"><div>Imprimé le ${pNow()}</div><div>${DB.dossiers.length} dossier${DB.dossiers.length>1?'s':''}</div></div></div>
+    <div class="pr-ttl">Récapitulatif — Toutes funérailles</div>
+    <div class="pr-sub">${DB.dossiers.length} dossier${DB.dossiers.length>1?'s':''} · ${DB.cotisations.length} cotisants au total</div>
+    <div class="pr-stats">
+      <div class="pr-stat"><div class="pr-sl">Cotisations totales</div><div class="pr-sv g">${fmt(totalAllCots)}</div></div>
+      <div class="pr-stat"><div class="pr-sl">Dépenses totales</div><div class="pr-sv r">${fmt(totalAllDeps)}</div></div>
+      <div class="pr-stat"><div class="pr-sl">Solde global</div><div class="pr-sv ${(totalAllCots-totalAllDeps)>=0?'g':'r'}">${fmt(Math.abs(totalAllCots-totalAllDeps))}</div></div>
+    </div>
+    <div class="pr-rule"></div>
+    <table class="pr-tbl"><thead><tr><th>Défunt(e)</th><th style="width:52pt">Date</th><th style="width:60pt">Lieu</th><th>Responsable</th><th class="r" style="width:62pt">Cotisations</th><th class="r" style="width:62pt">Dépenses</th><th class="r" style="width:62pt">Solde</th><th class="r" style="width:30pt">Nb</th></tr></thead>
+    <tbody>${summaryRows}</tbody>
+    <tfoot><tr class="tot"><td colspan="4">TOTAUX</td><td class="r">${fmt(totalAllCots)}</td><td class="r">${fmt(totalAllDeps)}</td><td class="r">${fmt(totalAllCots-totalAllDeps)}</td><td class="r">${DB.cotisations.length}</td></tr></tfoot></table>
+    ${pFoot()}</div>`;
+
+  // One section per dossier
+  DB.dossiers.forEach(d=>{
+    const cots=DB.cotisations.filter(c=>c.dossierId===d.id).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+    const deps=DB.depenses.filter(x=>x.dossierId===d.id);
+    const grps=DB.groupes.filter(g=>g.dossierId===d.id);
+    const tC=cots.reduce((s,c)=>s+c.montant,0);
+    const tD=deps.reduce((s,x)=>s+x.montant,0);
+    const rows=cots.map((c,i)=>`<tr><td>${i+1}</td><td><strong>${esc(c.nom)}</strong></td><td class="r">${fmt(c.montant)}</td><td>${grps.find(g=>g.id===c.groupeId)?`<span class="pr-bdg b">${esc(grps.find(g=>g.id===c.groupeId).nom)}</span>`:'—'}</td><td>${fd(c.date)}</td></tr>`).join('');
+    pages+=`<div class="pr-page">
+      <div class="pr-doss-hdr"><div class="pr-doss-nm">${esc(d.defunt)}</div><div class="pr-doss-meta">${fd(d.funerailles)}${d.lieu?' · '+esc(d.lieu):''}${d.responsable?' · Resp: '+esc(d.responsable):''}</div></div>
+      ${pStats(cots,deps)}
+      <table class="pr-tbl"><thead><tr><th>#</th><th>Cotisant</th><th class="r" style="width:72pt">Montant</th><th style="width:72pt">Groupe</th><th style="width:52pt">Date</th></tr></thead>
+      <tbody>${rows||'<tr><td colspan="5" style="text-align:center;color:#aaa;font-style:italic;padding:10pt">Aucune cotisation</td></tr>'}</tbody>
+      <tfoot><tr class="tot"><td colspan="2">Total ${esc(d.defunt)}</td><td class="r">${fmt(tC)}</td><td colspan="2"></td></tr></tfoot></table>
+      ${pFoot()}</div>`;
+  });
+  return pages;
+}
+
+function bCompare(archIdx,cots,deps,grps,doss){
+  const arch=DB.archives[archIdx];if(!arch)return'';
+  const cC=cots.reduce((s,c)=>s+c.montant,0),cD=deps.reduce((s,d)=>s+d.montant,0);
+  const aC=arch.cotisations.reduce((s,c)=>s+c.montant,0),aD=arch.depenses.reduce((s,d)=>s+d.montant,0);
+  const dc=cC-aC;
+  const names=[...new Set([...cots.map(c=>c.nom),...arch.cotisations.map(c=>c.nom)])].sort();
+  const rows=names.map(n=>{
+    const cur=cots.filter(c=>c.nom===n).reduce((s,c)=>s+c.montant,0);
+    const arc=arch.cotisations.filter(c=>c.nom===n).reduce((s,c)=>s+c.montant,0);
+    const d=cur-arc;
+    return `<tr><td><strong>${esc(n)}</strong></td><td class="r">${cur?fmt(cur):'—'}</td><td class="r arch-amt">${arc?fmt(arc):'—'}</td><td class="r" style="color:${d>0?'#2d6a4f':d<0?'#9b2226':'#888'}">${d!==0?(d>0?'+':'')+fmt(d):'='}</td></tr>`;
+  }).join('');
+  return `<div class="pr-page">
+    <div class="pr-hdr"><div><div class="pr-brand">Mémorial</div><div class="pr-brand-sub">Comparaison</div></div><div class="pr-meta"><div>Imprimé le ${pNow()}</div></div></div>
+    <div class="pr-cmp-ttl">Comparaison des cotisations</div>
+    <div class="pr-2col">
+      <div class="pr-stat" style="border-color:#c9a84c"><div class="pr-sl" style="color:#8a6820">Dossier actif</div><div style="font-size:11pt;font-weight:500">${esc(doss?.defunt||'—')}</div><div style="font-size:7pt;color:#888">${fd(doss?.funerailles||'')}</div></div>
+      <div class="pr-stat" style="border-color:#93c5fd"><div class="pr-sl" style="color:#1e3a5f">Archive</div><div style="font-size:11pt;font-weight:500">${esc(arch.dossier?.defunt||arch._fn||'Archive')}</div><div style="font-size:7pt;color:#888">${fd(arch.dossier?.funerailles||'')}</div></div>
+    </div>
+    <div class="pr-stats">
+      <div class="pr-stat"><div class="pr-sl">Cotis. actuel</div><div class="pr-sv g">${fmt(cC)}</div></div>
+      <div class="pr-stat"><div class="pr-sl">Cotis. archive</div><div class="pr-sv" style="color:#1e3a5f">${fmt(aC)}</div></div>
+      <div class="pr-stat"><div class="pr-sl">Différence</div><div class="pr-sv ${dc>=0?'g':'r'}">${dc>=0?'+':''}${fmt(dc)}</div></div>
+    </div>
+    <div class="pr-rule"></div>
+    <div class="pr-sec">Comparaison nominale</div>
+    <table class="pr-tbl"><thead><tr><th>Nom</th><th class="r" style="width:80pt">Actuel</th><th class="r arch-amt" style="width:80pt">Archive</th><th class="r" style="width:72pt">Différence</th></tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr class="tot"><td>TOTAL</td><td class="r">${fmt(cC)}</td><td class="r">${fmt(aC)}</td><td class="r" style="color:${dc>=0?'#2d6a4f':'#9b2226'}">${dc>=0?'+':''}${fmt(dc)}</td></tr></tfoot></table>
+    ${pFoot()}</div>`;
+}
+
+// ── RENDER ALL ──
+function rAll(){rDash();rDeps();rCots();rGrps();rArch();rDossSel()}
+
+// ── SERVICE WORKER ──
+function regSW(){
+  if(!('serviceWorker'in navigator))return;
+  const sw=`const C='mv4';self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(['/'])));self.skipWaiting()});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim()});self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)))})`;
+  navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});
+}
+
+// ── INIT ──
+window.addEventListener('DOMContentLoaded',()=>{
+  loadDB();
+  setTimeout(()=>{
+    document.getElementById('splash').classList.add('out');
+    setTimeout(()=>{
+      document.getElementById('splash').style.display='none';
+      document.getElementById('app').classList.add('visible');
+      rAll();
+      updateDriveUI();
+    },750);
+  },2100);
+  regSW();
+});
+</script>
+</body>
+</html>
